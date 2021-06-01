@@ -38,4 +38,5 @@ for dim_id in range(np.size(y,1)):
     training_img_codes = training_img_codes + anchor_images_examples
     # todo: create csv with three cols: training_img_codes, true_dim_score, and feedback (in pandas)
     # set all feedback to 1
+    # split in 2 or 4 blocks
     # randomize per participant in psychopy, not here!
