@@ -6,6 +6,7 @@ n_blocks = 2  # set to a number that 96, 20, and 116 can be divided by -> 2 or 4
 y = np.loadtxt(path + 'data/spose_embedding_49d_sorted.txt')  # load y; path to folder resources
     # load indices of previously rated 20 images
 test_ref_imgs_ind = list(np.arange(20)*3)
+
 test_ref_imgs = []
 for ind, img_code in enumerate(test_ref_imgs_ind):  # format to four digits with leading 0s (like on website)
     test_ref_imgs.append(str(img_code).zfill(4))
@@ -44,6 +45,6 @@ for dim_id in range(np.size(y,1)):
         trial_mat[n_trials_fb_per_block:n_trials_per_block, 0] = [trials_nofb[i] for i in trials_nofb_block]
         # save as csv
         header = 'img_code,true_dim_score,feedback'
-        fname = path + 'exp_trial_csvs/exptrials_dim' + str(dim_id) + '_block' + str(block) + '.csv'
+        fname = path + 'trial_csvs/dim' + str(dim_id) + '_exptrials_block' + str(block) + '.csv'
         np.savetxt(fname, trial_mat, delimiter=",", header=header)
         # in psychopy: if true_dim_score, then run feedback routine, else continue
