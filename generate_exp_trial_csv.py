@@ -18,10 +18,13 @@ for ind, img_code in enumerate(test_new_imgs):  # format to four digits with lea
 
 # loop over all dims
     # for dim_id in range(np.size(y,1)):
-# combine 48 and 48 to all_no-feedback_trials
+# combine 48 and 48 to all_no-feedback_trials and randomize
 # add 20 trials
 # add true_dim_score for feedback img
 # set feedback to 1 for feedback img
+# randomize 20 imgs
+# create 2 or 4 block files
+# 48 + 10 images per file
 # in psychopy: if true_dim_score, then run feedback routine, else continue
 
 # save as csv
