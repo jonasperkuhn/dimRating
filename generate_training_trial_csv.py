@@ -1,12 +1,13 @@
 import numpy as np
 import random
+
 # set params
 path = 'C:/Users/joper/PycharmProjects/dimRating/'  # set path to data folder
 n_trials_train = 120  # number of total training trials
 n_trials_train_nofb = 10  # number of trials were no feedback will be given anymore
 n_anchors = 7  # number of dim scale anchors
 n_blocks = 2
-header = 'img_code,true_dim_score,feedback'
+header = 'img_code,true_dim_score,feedback,true_dim_score_percent'
 
 # load data
 y = np.loadtxt(path + 'data/spose_embedding_49d_sorted.txt')  # load true dim scores; path to folder resources
@@ -39,11 +40,12 @@ for dim_id in range(np.size(y,1)):
     # randomly select n_training_imgs-n_anchors images
     train_img_codes_sample = random.sample(train_img_pop, n_trials_train - n_anchors)
     # split off training no-feedback block of (n_trials_train_nofb) trials, set feedback to 0, and save as csv
-    trial_mat_nofb = np.zeros((n_trials_train_nofb, 3))
+    trial_mat_nofb = np.zeros((n_trials_train_nofb, 4))
     train_img_codes_nofb = random.sample(train_img_codes_sample, n_trials_train_nofb)
     trial_mat_nofb[:, 0] = train_img_codes_nofb
     train_img_codes_nofb_ind = [int(x) for x in train_img_codes_nofb]  # convert img codes back to indices
-    trial_mat_nofb[:, 1] = [y[i, dim_id] for i in train_img_codes_nofb_ind]  # add true_dim_score for feedback img
+    trial_mat_nofb[:, 1] = [y[i, dim_id] for i in train_img_codes_nofb_ind]  # add true_dim_score
+    trial_mat_nofb[:, 3] = [score/range_scores*100 for score in trial_mat_nofb[:, 1]]  # add true_dim_score in percent
     fname = path + 'trial_csvs/dim' + str(dim_id) + '_traintrials_nofb.csv'  # set file name
     np.savetxt(fname, trial_mat_nofb, delimiter=",", header=header)   # save as .csv
     # add anchor training images to list, and shuffle
@@ -51,11 +53,12 @@ for dim_id in range(np.size(y,1)):
     train_img_codes = train_img_codes_sample2 + anchor_images_examples
     random.shuffle(train_img_codes)
     # create trial matrix and fill with img_codes, corresponding dim_scores, and feedback=1
-    trial_mat = np.zeros((n_trials_train - n_trials_train_nofb, 3))
+    trial_mat = np.zeros((n_trials_train - n_trials_train_nofb, 4))
     trial_mat[:, 0] = train_img_codes
     train_img_codes_ind = [int(x) for x in train_img_codes]  # convert img codes back to indices
     trial_mat[:, 1] = [y[i, dim_id] for i in train_img_codes_ind]  # add true_dim_score for feedback img
     trial_mat[:, 2] = 1  # set all feedback to 1
+    trial_mat[:, 3] = [score/range_scores*100 for score in trial_mat[:, 1]]  # add true_dim_score in percent
     # split feedback training trials in 2 blocks and save trial files
     trial_mat_list = np.split(trial_mat, n_blocks)
     for block, trial_mat_split in enumerate(trial_mat_list):

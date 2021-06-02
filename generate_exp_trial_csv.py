@@ -1,7 +1,11 @@
 import random
 import numpy as np
+
+# set params
 path = 'C:/Users/joper/PycharmProjects/dimRating/'  # set path to data folder
 n_blocks = 2  # set to a number that 96, 20, and 116 can be divided by -> 2 or 4
+header = 'img_code,true_dim_score,feedback,true_dim_score_percent'
+
 # load data
 y = np.loadtxt(path + 'data/spose_embedding_49d_sorted.txt')  # load y; path to folder resources
     # load indices of previously rated 20 images
@@ -29,10 +33,13 @@ n_trials_fb_per_block = int(len(trials_fb) / n_blocks)
 n_trials_nofb_per_block = int(len(trials_nofb) / n_blocks)
 # loop over dims (for getting true_dim_scores)
 for dim_id in range(np.size(y,1)):
+    # select dim data and compute range
+    dim_scores = y[:, dim_id]
+    range_scores = max(dim_scores) - min(dim_scores)
     # create trial matrix blockwise
     for block in range(n_blocks):
         # initialize experimental trial matrix
-        trial_mat = np.zeros((n_trials_per_block, 3))
+        trial_mat = np.zeros((n_trials_per_block, 4))
         # add 20/n_blocks trials
         trials_fb_block = range(block*n_trials_fb_per_block, (block+1)*n_trials_fb_per_block)
         trial_mat[0:n_trials_fb_per_block, 0] = [trials_fb[i] for i in trials_fb_block]
@@ -40,11 +47,12 @@ for dim_id in range(np.size(y,1)):
         trial_mat[0:n_trials_fb_per_block, 1] = [y[test_ref_imgs_ind[i], dim_id] for i in trials_fb_block]
         # set feedback to 1 for feedback img
         trial_mat[0:n_trials_fb_per_block, 2] = 1
+        # convert true_dim_score to percent and save in row 4
+        trial_mat[0:n_trials_fb_per_block, 3] = [score / range_scores * 100 for score in trial_mat[0:n_trials_fb_per_block, 1]]
         # add 96/n_blocks trials
         trials_nofb_block = range(block*n_trials_nofb_per_block, (block+1)*n_trials_nofb_per_block)
         trial_mat[n_trials_fb_per_block:n_trials_per_block, 0] = [trials_nofb[i] for i in trials_nofb_block]
         # save as csv
-        header = 'img_code,true_dim_score,feedback'
         fname = path + 'trial_csvs/dim' + str(dim_id) + '_exptrials_block' + str(block) + '.csv'
         np.savetxt(fname, trial_mat, delimiter=",", header=header)
         # in psychopy: if true_dim_score, then run feedback routine, else continue
