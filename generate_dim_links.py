@@ -6,14 +6,15 @@ n_anchors = 6  # count of anchors
 zero_cutoff = 0.3
 # load data
 y = np.loadtxt(data_path + 'spose_embedding_49d_sorted.txt')  # load y; path to folder resources
+stim_imgs =
 # select scores of relevant dimension
 dim_scores = y[:, dim_id]
 # initialize img_code dict
 img_codes = dict()
 # enter image codes of images below cut-off to 'notatall'
 img_ind_zero = list(np.where(dim_scores <= zero_cutoff)[0])
-# format to four digits with leading 0s (like on website), and save in dict
-img_codes['notatall'] = [str(img_code).zfill(4) for img_code in img_ind_zero]
+# format to four digits, starting from 0001, with leading 0s (like on website), and save in dict
+img_codes['notatall'] = [str(img_code+1).zfill(4) for img_code in img_ind_zero]
 # get indices
 img_ind_nonzero = list(np.where(dim_scores > zero_cutoff)[0])
 # extract image codes for each anchor range, and sort from highest to lowest
@@ -28,5 +29,5 @@ for i_anchor in range(n_anchors):
     sorted_indices = list([np.argsort(dim_scores[img_codes_unsorted])][0])
     img_codes_sorted = [img_codes_unsorted[img_code] for img_code in sorted_indices]
     # todo: remove previously rated 20 images (will be tested)
-    # format to four digits with leading 0s (like on website), and save in dict
-    img_codes[i_anchor] = [str(img_code).zfill(4) for img_code in img_codes_sorted]
+    # format to four digits, starting from 0001, with leading 0s (like on website), and save in dict
+    img_codes[i_anchor] = [str(img_code+1).zfill(4) for img_code in img_codes_sorted]
