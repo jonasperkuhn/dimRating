@@ -1,12 +1,12 @@
 import numpy as np
 # set params
 data_path = 'C:/Users/joper/PycharmProjects/dimRating/data/'  # set path to resources folder
-dim_id = 0  # set dim id
+dim_id = 44  # set dim id
 n_anchors = 6  # count of anchors
 zero_cutoff = 0.3
 # load data
 y = np.loadtxt(data_path + 'spose_embedding_49d_sorted.txt')  # load y; path to folder resources
-stim_imgs =
+stim_imgs_20 = np.loadtxt(data_path + 'ref_imgs_20.txt')
 # select scores of relevant dimension
 dim_scores = y[:, dim_id]
 # initialize img_code dict
@@ -28,6 +28,7 @@ for i_anchor in range(n_anchors):
     # get indices of anchor images, sorted from highest to lowest
     sorted_indices = list([np.argsort(dim_scores[img_codes_unsorted])][0])
     img_codes_sorted = [img_codes_unsorted[img_code] for img_code in sorted_indices]
-    # todo: remove previously rated 20 images (will be tested)
-    # format to four digits, starting from 0001, with leading 0s (like on website), and save in dict
-    img_codes[i_anchor] = [str(img_code+1).zfill(4) for img_code in img_codes_sorted]
+    # remove previously rated 20 images (because they will be tested)
+    img_codes_included = [img_code for img_code in img_codes_sorted if img_code not in stim_imgs_20]
+    # format to four digits, !starting from 0001!, with leading 0s (like on website), and save in dict
+    img_codes[i_anchor] = [str(img_code+1).zfill(4) for img_code in img_codes_included]
