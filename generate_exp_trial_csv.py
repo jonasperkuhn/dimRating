@@ -4,6 +4,7 @@ import numpy as np
 # set params
 path = 'C:/Users/joper/PycharmProjects/dimRating/'  # set path to data folder
 n_blocks = 2  # set to a number that 96, 20, and 116 can be divided by -> 2 or 4
+random.seed(808)
 header = 'img_code,true_dim_score,feedback,true_dim_score_percent'
 
 # load data

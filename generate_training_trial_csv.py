@@ -7,6 +7,7 @@ n_trials_train = 120  # number of total training trials
 n_trials_train_nofb = 10  # number of trials were no feedback will be given anymore
 n_anchors = 7  # number of dim scale anchors
 n_blocks = 2
+random.seed(808)
 header = 'img_code,true_dim_score,feedback,true_dim_score_percent'
 
 # load data
