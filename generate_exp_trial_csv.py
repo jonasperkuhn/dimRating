@@ -46,7 +46,7 @@ for dim_id in range(np.size(y,1)):
         trial_mat[n_trials_fb_per_block:n_trials_per_block, 0] = [trials_nofb[i] for i in trials_nofb_block]
         # save as csv
         fname = path + 'trial_csvs/dim' + str(dim_id) + '_exptrials_block' + str(block) + '.csv'
-        np.savetxt(fname, trial_mat, delimiter=",", header=header)
+        np.savetxt(fname, trial_mat, delimiter=",", header=header, comments='')
         # in psychopy: if true_dim_score, then run feedback routine, else continue
         # in psychopy: compute true_dim_score_percent
         # in psychopy: format img codes according to website code (4 digits, starting from 0001)

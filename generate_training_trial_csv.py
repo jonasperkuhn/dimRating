@@ -44,7 +44,7 @@ for dim_id in range(np.size(y,1)):
     train_img_codes_nofb_ind = [int(x) for x in train_img_codes_nofb]  # convert img codes back to indices
     trial_mat_nofb[:, 1] = [y[i, dim_id] for i in train_img_codes_nofb_ind]  # add true_dim_score
     fname = path + 'trial_csvs/dim' + str(dim_id) + '_traintrials_nofb.csv'  # set file name
-    np.savetxt(fname, trial_mat_nofb, delimiter=",", header=header)   # save as .csv
+    np.savetxt(fname, trial_mat_nofb, delimiter=",", header=header, comments='')   # save as .csv
 
     # add anchor training images to list, and shuffle
     train_img_codes_sample2 = [x for x in train_img_codes_sample if (x not in train_img_codes_nofb)]
@@ -60,7 +60,7 @@ for dim_id in range(np.size(y,1)):
     trial_mat_list = np.split(trial_mat, n_blocks)
     for block, trial_mat_split in enumerate(trial_mat_list):
         fname = path + 'trial_csvs/dim' + str(dim_id) + '_traintrials_fb_block' + str(block) + '.csv'  # set file name
-        np.savetxt(fname, trial_mat_split, delimiter=",", header=header)   # save as .csv
+        np.savetxt(fname, trial_mat_split, delimiter=",", header=header, comments='')   # save as .csv
     # randomization per participant in psychopy, not here!
     # in psychopy: compute true_dim_score_percent
     # in psychopy: format img codes according to website code (4 digits, starting from 0001)
