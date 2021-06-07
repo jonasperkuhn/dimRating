@@ -11,13 +11,18 @@ stim_imgs_20 = np.loadtxt(path_data + 'ref_imgs_20.txt')
 dim_scores = y[:, dim_id]
 # initialize img_code dict
 img_codes = dict()
+
+# get not-at-all images
 # enter image codes of images below cut-off to 'notatall'
 img_ind_zero = list(np.where(dim_scores <= zero_cutoff)[0])
 # format to four digits, and save in dict
 img_codes_unsorted_zero = [img_code for img_code in img_ind_zero]
 # sort from highest to lowest score
 sorted_indices_zero = list([np.argsort(dim_scores[img_codes_unsorted_zero])][0])
-img_codes['notatall'] = [img_codes_unsorted_zero[img_code] for img_code in sorted_indices_zero]
+# select 10 lowest scoring images for not-at-all anchor
+anchor_imgs_notatall = [img_codes_unsorted_zero[img_code] for img_code in sorted_indices_zero][-11:-1]
+
+# get non-zero images
 # get indices
 img_ind_nonzero = list(np.where(dim_scores > zero_cutoff)[0])
 # extract image codes for each anchor range, and sort from highest to lowest
@@ -32,9 +37,4 @@ for i_anchor in range(n_anchors):
     sorted_indices = list([np.argsort(dim_scores[img_codes_unsorted])][0])
     img_codes_sorted = [img_codes_unsorted[img_code] for img_code in sorted_indices]
     # remove previously rated 20 images (because they will be tested)
-    img_codes_included = [img_code for img_code in img_codes_sorted if img_code not in stim_imgs_20]
-    # format to four digits, !starting from 0001!, with leading 0s (like on website), and save in dict
-    img_codes[i_anchor] = [str(img_code+1).zfill(4) for img_code in img_codes_included]
-
-# select image codes from dictionary
-anchor_imgs_notatall = img_codes['notatall'][-11:-1]  # select 10 lowest scoring images for not-at-all anchor
+    img_codes[i_anchor] = [img_code for img_code in img_codes_sorted if img_code not in stim_imgs_20]
