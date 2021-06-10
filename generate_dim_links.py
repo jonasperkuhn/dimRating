@@ -14,13 +14,16 @@ img_codes = dict()
 
 # get not-at-all images
 # enter image codes of images below cut-off to 'notatall'
-img_ind_zero = list(np.where(dim_scores <= zero_cutoff)[0])
-# format to four digits, and save in dict
-img_codes_unsorted_zero = [img_code for img_code in img_ind_zero]
+img_codes_unsorted_zero = list(np.where(dim_scores <= zero_cutoff)[0])
 # sort from highest to lowest score
 sorted_indices_zero = list([np.argsort(dim_scores[img_codes_unsorted_zero])][0])
 # select 10 lowest scoring images for not-at-all anchor
 anchor_imgs_notatall = [img_codes_unsorted_zero[img_code] for img_code in sorted_indices_zero][-11:-1]
+
+# alternative: select imgs below 0.1
+img_ind_zero = list(np.where(dim_scores <= (zero_cutoff-0.2))[0])
+# randomly choose n image codes below 0.1 as anchor imgs
+anchor_imgs_notatall = np.random.choice(img_ind_zero, 12, replace=False)
 
 # get non-zero images
 # get indices
