@@ -22,7 +22,7 @@ img_codes = dict()
 
 # get set of not-at-all images
 img_ind_zero = list(np.where(dim_scores <= 0.1)[0])  # select imgs below 0.1
-anchor_imgs_notatall = np.random.choice(img_ind_zero, 10, replace=False)  # randomly choose 10 imgs as anchor imgs
+anchor_imgs_notatall = np.random.choice(img_ind_zero, n_anchor_imgs, replace=False)  # randomly choose 10 imgs as anchor imgs
 
 # get non-zero images
 img_ind_nonzero = list(np.where(dim_scores > zero_cutoff)[0])  # get indices
