@@ -9,11 +9,11 @@ dim_rater_fb.pos = (pos_scale_x, pos_scale_y)
 scale_steps = n_anchors + 1  # absolute steps are 7 (-1 to 5)
 scale_pos_steps = n_anchors - 1  # positive scale goes from 0 to 5
 # get true dim scores
-if true_dim_score <= zero_cutoff:  # if true dim is 'not at all' (below cutoff)
+if dim_score_true <= zero_cutoff:  # if true dim is 'not at all' (below cutoff)
     dim_score_true_ptile = -1
     pos_dim_true = pos_notatall_y - 0.02
 else:
-    i_score_true = np.abs(np.array(dim_scores_nonzero) - true_dim_score).argmin()  # find index of true dim score img
+    i_score_true = np.abs(np.array(dim_scores_nonzero) - dim_score_true).argmin()  # find index of true dim score img
     dim_score_true_ptile = ptiles[i_score_true]  # select corresponding percentile
     pos_dim_true = (pos_anchors_y[0] + size_scale_y * dim_score_true_ptile / 100)
 # get rated dim scores

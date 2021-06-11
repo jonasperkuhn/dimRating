@@ -6,16 +6,16 @@ path = 'C:/Users/joper/PycharmProjects/dimRating/'  # set path to data folder
 zero_cutoff = 0.3
 n_blocks = 2  # set to a number that 96, 20, and 116 can be divided by -> 2 or 4
 random.seed(808)
-header = 'img_code,true_dim_score,feedback'
+header = 'img_code,dim_score_true,feedback'
 
 # load data
 y = np.loadtxt(path + 'data/spose_embedding_49d_sorted.txt')  # load y; path to folder resources
     # load indices of previously rated 20 images
 test_ref_imgs = list(np.loadtxt(path + 'data/ref_imgs_20.txt'))
     # load/generate list of 48 not-ref spose image id's
-test_non_ref_imgs = list(np.arange(48)*5)
+test_non_ref_imgs = list(np.arange(48)*5)  # todo: remove * 5 for actual construction
     # load list of 48 new image id's
-test_new_imgs = list(np.arange(48) * 7)
+test_new_imgs = list(np.arange(48) * 7)  # todo: remove * 7
 # combine 48 and 48 to all_no-feedback_trials and randomize
 trials_fb = test_ref_imgs  # don't random shuffle to keep alignment to indices
 trials_nofb = test_non_ref_imgs + test_new_imgs
