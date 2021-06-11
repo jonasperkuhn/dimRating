@@ -1,5 +1,3 @@
-## code not for psychopy:
-true_dim_score = 1
 ## end feedback routine, if feedback variable in conditions file = 0
 if feedback == 0:
     continueRoutine = False # end routine
@@ -31,17 +29,17 @@ else:
 # determine difference between rated and true dim score in percent
 diff_percent_ptile = round(abs(score_rated_ptile - dim_score_true_ptile))
 # set percent deviation as string for display
-deviation_message.text = (str(diff_percent) + "% off")
+deviation_message.text = (str(diff_percent_ptile) + "% off")
 # determine the positions to highlight on slider scale
 pos_diff = abs(pos_dim_rated - pos_dim_true)
 
 ## determine color of deviation rectangle
-if diff_percent < 1:
+if diff_percent_ptile < 1:
     deviation_color = 'green'
     deviation_message.text = 'Correct!\nWell done!'
-elif diff_percent < 5:
+elif diff_percent_ptile < 5:
     deviation_color = 'yellowgreen'
-elif diff_percent < 30:
+elif diff_percent_ptile < 30:
     deviation_color = 'orange'
 else:
     deviation_color = 'red'

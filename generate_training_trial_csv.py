@@ -9,7 +9,7 @@ n_anchors = 6  # number of dim scale anchors
 zero_cutoff = 0.3
 n_blocks = 2
 random.seed(808)
-header = 'img_code,true_dim_score,feedback'
+header = 'img_code,dim_score_true,feedback'
 
 # load data
 y = np.loadtxt(path + 'data/spose_embedding_49d_sorted.txt')  # load true dim scores; path to folder resources
