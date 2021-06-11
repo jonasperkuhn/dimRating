@@ -26,14 +26,11 @@ else:
     i_score_rated = np.abs(np.array(ptiles) - score_rated_ptile).argmin()  # find index of closest
     score_rated_spose = dim_scores_nonzero[i_score_rated]  # select corresponding percentile
     pos_dim_rated = (pos_anchors_y[0] + size_scale_y * score_rated_ptile / 100)
+
 # determine difference between rated and true dim score in percent
 diff_percent_ptile = round(abs(score_rated_ptile - dim_score_true_ptile))
-# set percent deviation as string for display
-deviation_message.text = (str(diff_percent_ptile) + "% off")
-# determine the positions to highlight on slider scale
-pos_diff = abs(pos_dim_rated - pos_dim_true)
 
-## determine color of deviation rectangle
+# determine color of deviation rectangle
 if diff_percent_ptile < 1:
     deviation_color = 'green'
     deviation_message.text = 'Correct!\nWell done!'
@@ -43,3 +40,13 @@ elif diff_percent_ptile < 30:
     deviation_color = 'orange'
 else:
     deviation_color = 'red'
+
+# set percent deviation as string for display
+if dim_score_true_ptile == -1 and diff_percent_ptile > 0:
+    deviation_message.text = ('Consider the\n"not at all"\nanchor')
+elif score_rated_ptile == -1 and diff_percent_ptile > 0:
+    deviation_message.text = ('Consider\nthe higher\nanchors')
+else:
+    deviation_message.text = (str(diff_percent_ptile) + "% off")
+# determine the positions to highlight on slider scale
+pos_diff = abs(pos_dim_rated - pos_dim_true)
