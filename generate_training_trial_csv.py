@@ -3,12 +3,12 @@ import random
 
 # set params
 path = 'C:/Users/joper/PycharmProjects/dimRating/'  # set path to data folder
-n_trials_train = 120  # number of total training trials
+n_trials_train = 190  # number of total training trials
 n_trials_train_nofb = 10  # number of trials were no feedback will be given anymore
 n_anchors = 6  # number of dim scale anchors
 n_anchor_imgs = 12  # max number of imgs per anchor
 zero_cutoff = 0.3
-n_blocks = 2
+n_blocks = 3
 random.seed(808)
 header = 'img_code,dim_score_true,feedback'
 
@@ -68,7 +68,7 @@ for dim_id in range(np.size(y,1)):
     train_img_codes_ind = [int(x) for x in train_img_codes]  # convert img codes back to indices
     trial_mat[:, 1] = [y[i, dim_id] for i in train_img_codes_ind]  # add true_dim_score for feedback img
     trial_mat[:, 2] = 1  # set all feedback to 1
-    # split feedback training trials in 2 blocks and save trial files
+    # split feedback training trials in blocks and save trial files
     trial_mat_list = np.split(trial_mat, n_blocks)
     for block, trial_mat_split in enumerate(trial_mat_list):
         fname = path + 'trial_csvs/dim' + str(dim_id) + '_traintrials_fb_block' + str(block) + '.csv'  # set file name

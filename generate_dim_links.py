@@ -12,7 +12,8 @@ stim_imgs_20 = [int(i) for i in list(stim_imgs_20)]  # convert to list of intege
 # load training images and convert to list of integers
 stim_imgs_train0 = np.loadtxt(path_data + 'condition_files/traintrials_fb_block0.csv', delimiter=',', skiprows=1)[:,0]
 stim_imgs_train1 = np.loadtxt(path_data + 'condition_files/traintrials_fb_block1.csv', delimiter=',', skiprows=1)[:,0]
-stim_imgs_train = np.concatenate((stim_imgs_train0,stim_imgs_train1))  # combine data from both blocks
+stim_imgs_train2 = np.loadtxt(path_data + 'condition_files/traintrials_fb_block2.csv', delimiter=',', skiprows=1)[:,0]
+stim_imgs_train = np.concatenate((stim_imgs_train0, stim_imgs_train1, stim_imgs_train2))  # combine data from all blocks
 stim_imgs_train = [int(i) for i in list(stim_imgs_train)]
 
 # select scores of relevant dimension
