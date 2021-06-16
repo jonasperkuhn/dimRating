@@ -1,7 +1,8 @@
 import numpy as np
+import csv
 # set params
 path_data = 'C:/Private/Studium/Studium Leipzig/Masterarbeit/DimRating/Psychopy/resources/'  # set path to resources folder
-dim_id = 48  # set dim id
+dim_id = 0  # set dim id
 n_anchors = 6  # count of anchors
 n_anchor_imgs = 12
 zero_cutoff = 0.3
@@ -44,8 +45,19 @@ for i_anchor in range(n_anchors):
         img_codes_closest = [img_ind_nonzero[img]
                              for img in np.argsort(anchor_dev)][0:min(n_anchor_imgs, n_anchor_imgs_very)]
     # remove training images and previously rated 20 images (because they will be tested)
-    img_codes[i_anchor] = [img_code for img_code in img_codes_closest
+    img_codes[i_anchor] = [int(img_code) for img_code in img_codes_closest
                            if img_code not in stim_imgs_20
                            and img_code not in stim_imgs_train]
 # get all possible imgs for last (=highest) anchor
 img_codes_inspect_highest = [img_ind_nonzero[img] for img in np.argsort(anchor_dev)][0: n_anchor_imgs_very]
+
+
+# save codes of each anchor as csv
+for i_anchor in range(n_anchors):
+    data = img_codes[i_anchor]
+    # opening the csv file in 'w+' mode
+    file = open(path_data + 'img_codes_' + str(i_anchor) + '.csv', 'w+', newline='')
+    # writing the data into the file
+    with file:
+        write = csv.writer(file)
+        write.writerow(data)
