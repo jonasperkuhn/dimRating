@@ -20,7 +20,7 @@ stim_imgs_train = [int(i) for i in list(stim_imgs_train)]
 # select scores of relevant dimension
 dim_scores = spose[:, dim_id]
 # initialize img_code dict
-img_codes = dict()
+img_codes = {}
 
 # get set of not-at-all images
 img_ind_zero = list(np.where(dim_scores <= 0.1)[0])  # select imgs below 0.1
