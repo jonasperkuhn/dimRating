@@ -24,6 +24,9 @@ img_codes = {}
 
 # get set of not-at-all images
 img_ind_zero = list(np.where(dim_scores <= 0.1)[0])  # select imgs below 0.1
+dim_scores_zero = [dim_scores[ind] for ind in img_ind_zero]  # get dim scores corresponding to notatall imgs
+ptiles_notatall = [(len(list(np.where(np.array(dim_scores_zero) <= score)[0])) /
+           len(dim_scores_zero)) * 100 for score in dim_scores_zero]  # convert scores to percentiles
 anchor_imgs_notatall = np.random.choice(img_ind_zero, n_anchor_imgs, replace=False)  # randomly choose 10 imgs as anchor imgs
 
 # get non-zero images
