@@ -1,9 +1,10 @@
+import os
 import numpy as np
 import random
 import csv
 
 # set params
-path = 'C:/Users/joper/PycharmProjects/dimRating/'  # set path to data folder
+path = 'C:/Users/joper/PycharmProjects/dimRating/data/'  # set path to data folder
 n_trials_train = 190  # number of total training trials
 n_trials_train_nofb = 10  # number of trials were no feedback will be given anymore
 n_anchors = 7  # number of dim scale anchors
@@ -17,8 +18,8 @@ header = 'img_code,dim_score_true,feedback,dim_score_true_ptile'
 random.seed(808)
 
 # load data
-spose = np.loadtxt(path + 'data/spose_embedding_49d_sorted.txt')  # load true dim scores; path to folder resources
-stim_imgs_20 = np.loadtxt(path + 'data/ref_imgs_20.txt')
+spose = np.loadtxt(path + 'spose_embedding_49d_sorted.txt')  # load true dim scores; path to folder resources
+stim_imgs_20 = np.loadtxt(path + 'ref_imgs_20.txt')
 stim_imgs_20 = [int(i) for i in list(stim_imgs_20)]  # convert to list of integers
     # load/generate list of 48 not-ref spose image id's
 test_non_ref_imgs = list(np.arange(48)*5)  # todo: remove * 5 for actual construction
@@ -36,7 +37,13 @@ n_trials_nofb_per_block = int(len(trials_nofb) / n_blocks_exp)
 
 # loop over dims
 for dim_id in range(np.size(spose, 1)):
-
+    # create output directory for dim
+    try:
+        os.makedirs(path + 'dim_' + str(dim_id))
+    except OSError as e:
+        if e.errno != errno.EEXIST:
+            raise
+    path_output = path + 'dim_' + str(dim_id) + '/'
     ### generate training trial csv
     # select data relevant for dimension and add img codes
     dim_scores = spose[:, dim_id]
@@ -96,7 +103,7 @@ for dim_id in range(np.size(spose, 1)):
     trial_mat_nofb[:, 1] = [dim_scores[i] for i in train_img_codes_nofb_ind]  # add true_dim_score
     trial_mat_nofb[:, 2] = 0  # set all feedback to 0
     trial_mat_nofb[:, 3] = [ptiles_all[i] for i in train_img_codes_nofb_ind]  # add true_dim_score_ptile
-    fname = path + 'trial_csvs/dim' + str(dim_id) + '_traintrials_nofb.csv'  # set file name
+    fname = path_output + 'traintrials_nofb.csv'  # set file name
     np.savetxt(fname, trial_mat_nofb, delimiter=",", header=header, comments='')   # save as .csv
     # add anchor training images to list, and shuffle
     train_img_codes_sample2 = [x for x in train_img_codes_sample if (x not in train_img_codes_nofb)]
@@ -112,7 +119,7 @@ for dim_id in range(np.size(spose, 1)):
     # split feedback training trials in blocks and save trial files
     trial_mat_list = np.split(trial_mat_fb, n_blocks_train)
     for block, trial_mat_split in enumerate(trial_mat_list):
-        fname = path + 'trial_csvs/dim' + str(dim_id) + '_traintrials_fb_block' + str(block) + '.csv'  # set file name
+        fname = path_output + 'traintrials_fb_block' + str(block) + '.csv'  # set file name
         np.savetxt(fname, trial_mat_split, delimiter=",", header=header, comments='')   # save as .csv
     # randomization per participant in psychopy, not here!
     # in psychopy: format img codes according to website code (4 digits, starting from 0001)
@@ -136,7 +143,7 @@ for dim_id in range(np.size(spose, 1)):
         trials_nofb_block = range(block * n_trials_nofb_per_block, (block + 1) * n_trials_nofb_per_block)
         trial_mat_exp_block[n_trials_fb_per_block:n_trials_per_block, 0] = [trials_nofb[i] for i in trials_nofb_block]
         # save as csv
-        fname = path + 'trial_csvs/dim' + str(dim_id) + '_exptrials_block' + str(block) + '.csv'
+        fname = path_output + 'exptrials_block' + str(block) + '.csv'
         np.savetxt(fname, trial_mat_exp_block, delimiter=",", header=header, comments='')
 
     ### generate anchor img links
@@ -168,7 +175,7 @@ for dim_id in range(np.size(spose, 1)):
     for i_anchor in range(n_anchors):
         data = anchor_img_codes[i_anchor]
         # opening the csv file in 'w+' mode
-        file = open(path + 'trial_csvs/dim' + str(dim_id) + 'img_codes_' + str(i_anchor) + '.csv', 'w+', newline='')
+        file = open(path_output + 'img_codes_' + str(i_anchor) + '.csv', 'w+', newline='')
         # writing the data into the file
         with file:
             write = csv.writer(file)
@@ -176,7 +183,7 @@ for dim_id in range(np.size(spose, 1)):
     # get all possible imgs for last (=highest) anchor
     img_codes_inspect_highest = [img_ind_nonzero[img] for img in np.argsort(anchor_dev)][0: n_anchor_imgs_very]
     # save as csv
-    file = open(path + 'trial_csvs/dim' + str(dim_id) + 'img_codes_insp_highest.csv', 'w+', newline='')
+    file = open(path_output + 'img_codes_insp_highest.csv', 'w+', newline='')
     with file:
         write = csv.writer(file)
         write.writerow(img_codes_inspect_highest)
