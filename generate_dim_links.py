@@ -24,7 +24,7 @@ dim_scores = spose[:, dim_id]
 img_codes = {}
 
 # get set of not-at-all images
-img_ind_zero = list(np.where(dim_scores <= 0.1)[0])  # select imgs below 0.1
+img_ind_zero = list(np.where(dim_scores <= zero_cutoff)[0])  # select imgs below cutoff
 dim_scores_zero = [dim_scores[ind] for ind in img_ind_zero]  # get dim scores corresponding to notatall imgs
 ptiles_zero = [(len(list(np.where(np.array(dim_scores_zero) <= score)[0])) /
                 len(dim_scores_zero)) * 100 for score in dim_scores_zero]  # convert scores to percentiles
@@ -42,7 +42,7 @@ for i_anchor in range(n_anchors_pos):
     ptile_anchor = i_anchor / (n_anchors_pos - 1) * 100
     # calculate percentile deviance of each percentile
     anchor_dev = [np.abs(ptile - ptile_anchor) for ptile in ptiles_nonzero]
-    ## select n_anchor_imgs of lowest deviating percentiles
+    # select n_anchor_imgs of lowest deviating percentiles
     # for very high and very low anchor, choose max. n_anchor_imgs_very imgs, to avoid img overlap to other anchors
     if i_anchor in [0, n_anchors_pos - 1]:
         img_codes_closest = [img_ind_nonzero[img]
