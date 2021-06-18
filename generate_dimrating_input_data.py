@@ -1,5 +1,6 @@
 import numpy as np
 import random
+import csv
 
 # set params
 path = 'C:/Users/joper/PycharmProjects/dimRating/'  # set path to data folder
@@ -17,7 +18,8 @@ random.seed(808)
 
 # load data
 spose = np.loadtxt(path + 'data/spose_embedding_49d_sorted.txt')  # load true dim scores; path to folder resources
-stim_imgs_20 = list(np.loadtxt(path + 'data/ref_imgs_20.txt'))
+stim_imgs_20 = np.loadtxt(path + 'data/ref_imgs_20.txt')
+stim_imgs_20 = [int(i) for i in list(stim_imgs_20)]  # convert to list of integers
     # load/generate list of 48 not-ref spose image id's
 test_non_ref_imgs = list(np.arange(48)*5)  # todo: remove * 5 for actual construction
     # load list of 48 new image id's
@@ -96,7 +98,6 @@ for dim_id in range(np.size(spose, 1)):
     trial_mat_nofb[:, 3] = [ptiles_all[i] for i in train_img_codes_nofb_ind]  # add true_dim_score_ptile
     fname = path + 'trial_csvs/dim' + str(dim_id) + '_traintrials_nofb.csv'  # set file name
     np.savetxt(fname, trial_mat_nofb, delimiter=",", header=header, comments='')   # save as .csv
-
     # add anchor training images to list, and shuffle
     train_img_codes_sample2 = [x for x in train_img_codes_sample if (x not in train_img_codes_nofb)]
     train_img_codes_fb = train_img_codes_sample2 + anchor_images_examples
@@ -138,4 +139,44 @@ for dim_id in range(np.size(spose, 1)):
         fname = path + 'trial_csvs/dim' + str(dim_id) + '_exptrials_block' + str(block) + '.csv'
         np.savetxt(fname, trial_mat_exp_block, delimiter=",", header=header, comments='')
 
-# todo: add code to generate dim links
+    ### generate anchor img links
+    # get list of all training img codes, to remove from dimension stimuli
+    stim_imgs_train = train_img_codes_fb + train_img_codes_nofb
+    # initialize anchor img code dict
+    anchor_img_codes = {}
+    # randomly choose 10 imgs of zero imgs (below cutoff) as anchor imgs
+    anchor_img_codes[0] = np.random.choice(img_ind_zero, n_anchor_imgs, replace=False)
+    # extract image codes for each anchor range, and sort from closest to furthest away
+    for i_anchor in range(n_anchors_pos):
+        # determine anchor percentile
+        ptile_anchor = i_anchor / (n_anchors_pos - 1) * 100
+        # calculate percentile deviance of each percentile
+        anchor_dev = [np.abs(ptile - ptile_anchor) for ptile in ptiles_nonzero]
+        # select n_anchor_imgs of lowest deviating percentiles
+        # for very high and very low anchor, choose max. n_anchor_imgs_very imgs, to avoid img overlap to other anchors
+        if i_anchor in [0, n_anchors_pos - 1]:
+            img_codes_closest = [img_ind_nonzero[img]
+                                 for img in np.argsort(anchor_dev)][0:min(n_anchor_imgs, n_anchor_imgs_very)]
+        # for other anchors, take all n_anchor_imgs imgs (no threat of overlap)
+        else:
+            img_codes_closest = [img_ind_nonzero[img] for img in np.argsort(anchor_dev)][0: n_anchor_imgs]
+        # remove training images and previously rated 20 images (because they will be tested)
+        anchor_img_codes[i_anchor + 1] = [int(img_code) for img_code in img_codes_closest
+                                          if img_code not in stim_imgs_20
+                                          and img_code not in stim_imgs_train]
+    # save codes of each anchor as csv
+    for i_anchor in range(n_anchors):
+        data = anchor_img_codes[i_anchor]
+        # opening the csv file in 'w+' mode
+        file = open(path + 'trial_csvs/dim' + str(dim_id) + 'img_codes_' + str(i_anchor) + '.csv', 'w+', newline='')
+        # writing the data into the file
+        with file:
+            write = csv.writer(file)
+            write.writerow(data)
+    # get all possible imgs for last (=highest) anchor
+    img_codes_inspect_highest = [img_ind_nonzero[img] for img in np.argsort(anchor_dev)][0: n_anchor_imgs_very]
+    # save as csv
+    file = open(path + 'trial_csvs/dim' + str(dim_id) + 'img_codes_insp_highest.csv', 'w+', newline='')
+    with file:
+        write = csv.writer(file)
+        write.writerow(img_codes_inspect_highest)

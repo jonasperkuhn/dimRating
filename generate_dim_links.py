@@ -21,14 +21,14 @@ stim_imgs_train = [int(i) for i in list(stim_imgs_train)]
 # select scores of relevant dimension
 dim_scores = spose[:, dim_id]
 # initialize img_code dict
-img_codes = {}
+anchor_img_codes = {}
 
 # get set of not-at-all images
 img_ind_zero = list(np.where(dim_scores <= zero_cutoff)[0])  # select imgs below cutoff
 dim_scores_zero = [dim_scores[ind] for ind in img_ind_zero]  # get dim scores corresponding to notatall imgs
 ptiles_zero = [(len(list(np.where(np.array(dim_scores_zero) <= score)[0])) /
                 len(dim_scores_zero)) * 100 for score in dim_scores_zero]  # convert scores to percentiles
-img_codes[0] = np.random.choice(img_ind_zero, n_anchor_imgs, replace=False)  # randomly choose 10 imgs as anchor imgs
+anchor_img_codes[0] = np.random.choice(img_ind_zero, n_anchor_imgs, replace=False)  # randomly choose 10 imgs as anchor imgs
 
 # get non-zero images
 img_ind_nonzero = list(np.where(dim_scores > zero_cutoff)[0])  # get indices
@@ -51,13 +51,13 @@ for i_anchor in range(n_anchors_pos):
     else:
         img_codes_closest = [img_ind_nonzero[img] for img in np.argsort(anchor_dev)][0: n_anchor_imgs]
     # remove training images and previously rated 20 images (because they will be tested)
-    img_codes[i_anchor+1] = [int(img_code) for img_code in img_codes_closest
-                           if img_code not in stim_imgs_20
-                           and img_code not in stim_imgs_train]
+    anchor_img_codes[i_anchor + 1] = [int(img_code) for img_code in img_codes_closest
+                                      if img_code not in stim_imgs_20
+                                      and img_code not in stim_imgs_train]
 
 # save codes of each anchor as csv
 for i_anchor in range(n_anchors):
-    data = img_codes[i_anchor]
+    data = anchor_img_codes[i_anchor]
     # opening the csv file in 'w+' mode
     file = open(path_data + 'img_codes_' + str(i_anchor) + '.csv', 'w+', newline='')
     # writing the data into the file
