@@ -2,6 +2,7 @@ import os
 import numpy as np
 import random
 import csv
+from shutil import copyfile
 
 # set params
 path = 'C:/Users/joper/PycharmProjects/dimRating/data/'  # set path to data folder
@@ -10,7 +11,8 @@ n_trials_train_nofb = 10  # number of trials were no feedback will be given anym
 n_anchors = 7  # number of dim scale anchors
 n_anchors_pos = n_anchors - 1
 anchor_step_scaled = 1/(n_anchors-1)
-n_anchor_imgs = 12  # max number of imgs per anchor
+n_anchor_imgs = 15  # max number of imgs per anchor
+n_anchor_imgs_insp_highest = 33
 zero_cutoff = 0.3
 n_blocks_train = 3
 n_blocks_exp = 2  # set to a number that 96, 20, and 116 can be divided by -> 2 or 4
@@ -38,12 +40,8 @@ n_trials_nofb_per_block = int(len(trials_nofb) / n_blocks_exp)
 # loop over dims
 for dim_id in range(np.size(spose, 1)):
     # create output directory for dim
-    try:
-        os.makedirs(path + 'dim_' + str(dim_id))
-    except OSError as e:
-        if e.errno != errno.EEXIST:
-            raise
-    path_output = path + 'dim_' + str(dim_id) + '/'
+    os.makedirs(path + 'output/dim_' + str(dim_id))
+    path_output = path + 'output/dim_' + str(dim_id) + '/'
     ### generate training trial csv
     # select data relevant for dimension and add img codes
     dim_scores = spose[:, dim_id]
@@ -122,7 +120,6 @@ for dim_id in range(np.size(spose, 1)):
         fname = path_output + 'traintrials_fb_block' + str(block) + '.csv'  # set file name
         np.savetxt(fname, trial_mat_split, delimiter=",", header=header, comments='')   # save as .csv
     # randomization per participant in psychopy, not here!
-    # in psychopy: format img codes according to website code (4 digits, starting from 0001)
 
     ### generate exp trial csv
     range_scores_nonzero = max(dim_scores) - min(dim_scores[np.where(dim_scores > 0.3)])
@@ -151,7 +148,7 @@ for dim_id in range(np.size(spose, 1)):
     stim_imgs_train = train_img_codes_fb + train_img_codes_nofb
     # initialize anchor img code dict
     anchor_img_codes = {}
-    # randomly choose 10 imgs of zero imgs (below cutoff) as anchor imgs
+    # randomly choose n_anchor_imgs imgs of zero imgs (below cutoff) as anchor imgs
     anchor_img_codes[0] = np.random.choice(img_ind_zero, n_anchor_imgs, replace=False)
     # extract image codes for each anchor range, and sort from closest to furthest away
     for i_anchor in range(n_anchors_pos):
@@ -181,9 +178,36 @@ for dim_id in range(np.size(spose, 1)):
             write = csv.writer(file)
             write.writerow(data)
     # get all possible imgs for last (=highest) anchor
-    img_codes_inspect_highest = [img_ind_nonzero[img] for img in np.argsort(anchor_dev)][0: n_anchor_imgs_very]
+    img_codes_inspect_highest = [img_ind_nonzero[img] for img in np.argsort(anchor_dev)
+                                 if img_code not in stim_imgs_20
+                                 and img_code not in stim_imgs_train
+                                 ][0: min(n_anchor_imgs_insp_highest, n_anchor_imgs_very)]
     # save as csv
     file = open(path_output + 'img_codes_insp_highest.csv', 'w+', newline='')
     with file:
         write = csv.writer(file)
         write.writerow(img_codes_inspect_highest)
+
+    # select stimulus images and save them in folder
+    # first for training and test images
+    trial_img_list = stim_imgs_train + stim_imgs_20 + test_non_ref_imgs + test_new_imgs
+    # create directory to copy selected anchor images to
+    trial_img_dim_path = path_output + 'test images/'
+    os.makedirs(trial_img_dim_path)
+    # copy selected trial images to dim subfolder
+    for img_code in trial_img_list:
+        copyfile(path + 'test images/' + str(img_code) + '.jpg', trial_img_dim_path + str(img_code) + '.jpg')
+    # now same procedure for anchor imgs
+    # save list of all anchor imgs to select anchor imgs from all imgs in next step
+    anchor_imgs_dict_list = list(anchor_img_codes.values())
+    anchor_imgs_list = [item for sublist in anchor_imgs_dict_list for item in sublist[0:11]]
+    # add all image codes of img_codes_inspect_highest that were not yet included
+    for i in img_codes_inspect_highest:
+        if i not in anchor_imgs_list:
+            anchor_imgs_list.append(i)
+    # create directory to copy selected anchor images to
+    anchor_img_dim_path = path_output + 'anchor images/'
+    os.makedirs(anchor_img_dim_path)
+    # copy selected anchor images to dim subfolder
+    for img_code in anchor_imgs_list:
+        copyfile(path + 'anchor images/' + str(img_code) + '.jpg', anchor_img_dim_path + str(img_code) + '.jpg')
