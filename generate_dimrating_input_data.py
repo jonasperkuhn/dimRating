@@ -23,13 +23,13 @@ random.seed(808)
 spose = np.loadtxt(path + 'spose_embedding_49d_sorted.txt')  # load true dim scores; path to folder resources
 stim_imgs_20 = np.loadtxt(path + 'ref_imgs_20.txt')
 stim_imgs_20 = [int(i) for i in list(stim_imgs_20)]  # convert to list of integers
-    # load/generate list of 48 not-ref spose image id's
-test_non_ref_imgs = list(np.arange(48)*5)  # todo: remove * 5 for actual construction
-    # load list of 48 new image id's
-test_new_imgs = list(np.arange(48) * 7)  # todo: remove * 7
+# generate list of 48 not-ref spose image id's: define img codes
+stim_imgs_48_nonref = list(np.arange(start=2000, stop=2048))
+# generate list of 48 not-things spose image id's: define img codes
+stim_imgs_48_new = list(np.arange(start=3000, stop=3048))
 # combine 48 and 48 to all_no-feedback_trials and randomize
 trials_fb = stim_imgs_20  # don't random shuffle to keep alignment to indices
-trials_nofb = test_non_ref_imgs + test_new_imgs
+trials_nofb = stim_imgs_48_nonref + stim_imgs_48_new
 random.shuffle(trials_nofb)
 # calc trial numbers
 n_trials = len(trials_fb + trials_nofb)
@@ -190,7 +190,7 @@ for dim_id in range(np.size(spose, 1)):
 
     # select stimulus images and save them in folder
     # first for training and test images
-    trial_img_list = stim_imgs_train + stim_imgs_20 + test_non_ref_imgs + test_new_imgs
+    trial_img_list = stim_imgs_train + stim_imgs_20 + stim_imgs_48_nonref + stim_imgs_48_new
     # create directory to copy selected anchor images to
     trial_img_dim_path = path_output + 'test images/'
     os.makedirs(trial_img_dim_path)
