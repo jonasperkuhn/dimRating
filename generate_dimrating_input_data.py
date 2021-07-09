@@ -1,5 +1,6 @@
 import os
 import numpy as np
+import pickle
 import random
 import csv
 from shutil import copyfile
@@ -12,7 +13,7 @@ n_anchors = 7  # number of dim scale anchors
 n_anchors_pos = n_anchors - 1
 anchor_step_scaled = 1/(n_anchors-1)
 n_anchor_imgs = 15  # max number of imgs per anchor
-n_anchor_imgs_insp_highest = 33
+n_anchor_imgs_insp_highest = 36
 zero_cutoff = 0.3
 n_blocks_train = 3
 n_blocks_exp = 2  # set to a number that 96, 20, and 116 can be divided by -> 2 or 4
@@ -24,9 +25,9 @@ spose = np.loadtxt(path + 'spose_embedding_49d_sorted.txt')  # load true dim sco
 stim_imgs_20 = np.loadtxt(path + 'ref_imgs_20.txt')
 stim_imgs_20 = [int(i) for i in list(stim_imgs_20)]  # convert to list of integers
 # generate list of 48 not-ref spose image id's: define img codes
-stim_imgs_48_nonref = list(np.arange(start=2000, stop=2048))
+stim_imgs_48_nonref = list(np.arange(start=1000, stop=1048))  # todo: change to final img codes
 # generate list of 48 not-things spose image id's: define img codes
-stim_imgs_48_new = list(np.arange(start=3000, stop=3048))
+stim_imgs_48_new = list(np.arange(start=1500, stop=1548))  # todo: change to final img codes
 # combine 48 and 48 to all_no-feedback_trials and randomize
 trials_fb = stim_imgs_20  # don't random shuffle to keep alignment to indices
 trials_nofb = stim_imgs_48_nonref + stim_imgs_48_new
@@ -179,8 +180,12 @@ for dim_id in range(np.size(spose, 1)):
         with file:
             write = csv.writer(file)
             write.writerow(data)
+    # save as pickle
+    with open(path + 'anchor_img_files/anchor_img_codes_' + str(dim_id) + '.pkl', 'wb') as f:
+        pickle.dump(anchor_img_codes, f)
+
     # get all possible imgs for last (=highest) anchor
-    img_codes_inspect_highest = [img_ind_nonzero[img] for img in np.argsort(anchor_dev)
+    img_codes_inspect_highest = [img_ind_nonzero[img_code] for img_code in np.argsort(anchor_dev)
                                  if img_code not in stim_imgs_20
                                  and img_code not in stim_imgs_train
                                  ][0: min(n_anchor_imgs_insp_highest, n_anchor_imgs_very)]
@@ -189,6 +194,9 @@ for dim_id in range(np.size(spose, 1)):
     with file:
         write = csv.writer(file)
         write.writerow(img_codes_inspect_highest)
+    # save as pickle
+    with open(path + 'anchor_img_files/img_codes_insp_highest_' + str(dim_id) + '.pkl', 'wb') as f:
+        pickle.dump(img_codes_inspect_highest, f)
 
     # select stimulus images and save them in folder
     # first for training and test images
@@ -199,17 +207,3 @@ for dim_id in range(np.size(spose, 1)):
     # copy selected trial images to dim subfolder
     for img_code in trial_img_list:
         copyfile(path + 'test images/' + str(img_code) + '.jpg', trial_img_dim_path + str(img_code) + '.jpg')
-    # now same procedure for anchor imgs
-    # save list of all anchor imgs to select anchor imgs from all imgs in next step
-    anchor_imgs_dict_list = list(anchor_img_codes.values())
-    anchor_imgs_list = [item for sublist in anchor_imgs_dict_list for item in sublist[0:11]]
-    # add all image codes of img_codes_inspect_highest that were not yet included
-    for i in img_codes_inspect_highest:
-        if i not in anchor_imgs_list:
-            anchor_imgs_list.append(i)
-    # create directory to copy selected anchor images to
-    anchor_img_dim_path = path_output + 'anchor images/'
-    os.makedirs(anchor_img_dim_path)
-    # copy selected anchor images to dim subfolder
-    for img_code in anchor_imgs_list:
-        copyfile(path + 'anchor images/' + str(img_code) + '.jpg', anchor_img_dim_path + str(img_code) + '.jpg')
