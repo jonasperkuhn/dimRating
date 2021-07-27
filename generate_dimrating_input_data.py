@@ -18,9 +18,9 @@ n_anchors_pos = n_anchors - 1
 anchor_step_scaled = 1/(n_anchors-1)
 n_anchor_imgs = 15  # max number of imgs per anchor
 n_anchor_imgs_insp_highest = 36  # max number of imgs displayed in the inspect_highest_anchor_imgs routine
-zero_cutoff = 0.3  # scale cutoff, calculating percentiles separately below and above cutoff for a percentile scale that also differentiates the high values (else biased by many low values)
+zero_cutoff = 0.3  # scale cutoff, to calculate percentiles separately below and above cutoff for a percentile scale that also differentiates the high values (else biased by many low values)
 n_blocks_train = 3  # number of training blocks
-n_blocks_exp = 2  # number of experimental blocks: set to a number that 96, 20, and 116 can be divided by -> 2 or 4
+n_blocks_exp = 2  # number of experimental blocks: set to a number that 96, 20, and (96 + 20 =) 116 can be divided by -> 2 or 4
 header = 'img_code,dim_score_true,feedback,dim_score_true_ptile'  # variable names in input csv's
 random.seed(808)
 
