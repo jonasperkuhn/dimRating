@@ -43,14 +43,15 @@ n_trials_per_block = int(n_trials / n_blocks_exp)
 n_trials_fb_per_block = int(len(trials_fb) / n_blocks_exp)
 n_trials_nofb_per_block = int(len(trials_nofb) / n_blocks_exp)
 
-# copy template experiment folder n_dims times, to create separate experiments for each spose dimension
-
-
 # loop over dims
 for dim_id in range(np.size(spose, 1)):
-    # create output directory for dim
-    os.makedirs(path_input + 'output/dim_' + str(dim_id))
-    path_output = path_exps_final + 'dimrating_dim' + str(dim_id) + '/resources/'
+    # copy template experiment folder n_dims times, to create separate experiments for each spose dimension
+        # first create template experiment folder manually, with resources subfolders for condition files, screenshots,
+        # and test images, as well as the mouse-cursor-img.png
+    dim_exp_folder_path = path_exps_final + 'dimrating_dim' + str(dim_id) + '/'
+    copytree(path_exps_final + 'dimrating_template_folder', dim_exp_folder_path)
+    # define output path as resources folder of newly created experiment folder
+    path_output = dim_exp_folder_path + 'resources/'
     ### generate training trial csv
     # select data relevant for dimension and add img codes
     dim_scores = spose[:, dim_id]
