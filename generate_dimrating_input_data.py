@@ -2,27 +2,32 @@ import os
 import numpy as np
 import pickle
 import random
-import csv
-from shutil import copyfile
+from shutil import copyfile, copytree
+
+# set path to input data folder
+path_input = 'C:/Users/joper/PycharmProjects/dimRating/data/'
+# set path to offline experiment, where screenshots are generated for online use
+path_exp_screenshot = 'C:/Private/Studium/Studium Leipzig/Masterarbeit/DimRating/Psychopy Screenshot/resources/'
+# set path to final online experiments folder (one exp per dim)
+path_exps_final = 'C:/Private/Studium/Studium Leipzig/Masterarbeit/DimRating/final exps/'
 
 # set params
-path = 'C:/Users/joper/PycharmProjects/dimRating/data/'  # set path to data folder
 n_trials_train = 190  # number of total training trials
 n_trials_train_nofb = 10  # number of trials were no feedback will be given anymore
 n_anchors = 7  # number of dim scale anchors
 n_anchors_pos = n_anchors - 1
 anchor_step_scaled = 1/(n_anchors-1)
 n_anchor_imgs = 15  # max number of imgs per anchor
-n_anchor_imgs_insp_highest = 36
-zero_cutoff = 0.3
-n_blocks_train = 3
-n_blocks_exp = 2  # set to a number that 96, 20, and 116 can be divided by -> 2 or 4
-header = 'img_code,dim_score_true,feedback,dim_score_true_ptile'
+n_anchor_imgs_insp_highest = 36  # max number of imgs displayed in the inspect_highest_anchor_imgs routine
+zero_cutoff = 0.3  # scale cutoff, calculating percentiles separately below and above cutoff for a percentile scale that also differentiates the high values (else biased by many low values)
+n_blocks_train = 3  # number of training blocks
+n_blocks_exp = 2  # number of experimental blocks: set to a number that 96, 20, and 116 can be divided by -> 2 or 4
+header = 'img_code,dim_score_true,feedback,dim_score_true_ptile'  # variable names in input csv's
 random.seed(808)
 
 # load data
-spose = np.loadtxt(path + 'spose_embedding_49d_sorted.txt')  # load true dim scores; path to folder resources
-stim_imgs_20 = np.loadtxt(path + 'ref_imgs_20.txt')
+spose = np.loadtxt(path_input + 'spose_embedding_49d_sorted.txt')  # load true dim scores; path to folder resources
+stim_imgs_20 = np.loadtxt(path_input + 'ref_imgs_20.txt')
 stim_imgs_20 = [int(i) for i in list(stim_imgs_20)]  # convert to list of integers
 # generate list of 48 not-ref spose image id's: define img codes
 stim_imgs_48_nonref = list(np.arange(start=1000, stop=1048))  # todo: change to final img codes
@@ -38,11 +43,14 @@ n_trials_per_block = int(n_trials / n_blocks_exp)
 n_trials_fb_per_block = int(len(trials_fb) / n_blocks_exp)
 n_trials_nofb_per_block = int(len(trials_nofb) / n_blocks_exp)
 
+# copy template experiment folder n_dims times, to create separate experiments for each spose dimension
+
+
 # loop over dims
 for dim_id in range(np.size(spose, 1)):
     # create output directory for dim
-    os.makedirs(path + 'output/dim_' + str(dim_id))
-    path_output = path + 'output/dim_' + str(dim_id) + '/'
+    os.makedirs(path_input + 'output/dim_' + str(dim_id))
+    path_output = path_exps_final + 'dimrating_dim' + str(dim_id) + '/resources/'
     ### generate training trial csv
     # select data relevant for dimension and add img codes
     dim_scores = spose[:, dim_id]
@@ -104,7 +112,7 @@ for dim_id in range(np.size(spose, 1)):
     trial_mat_nofb[:, 1] = [dim_scores[i] for i in train_img_codes_nofb_ind]  # add true_dim_score
     trial_mat_nofb[:, 2] = 0  # set all feedback to 0
     trial_mat_nofb[:, 3] = [ptiles_all[i] for i in train_img_codes_nofb_ind]  # add true_dim_score_ptile
-    fname = path_output + 'traintrials_nofb.csv'  # set file name
+    fname = path_output + 'condition files/traintrials_nofb.csv'  # set file name
     np.savetxt(fname, trial_mat_nofb, delimiter=",", header=header, comments='')   # save as .csv
     # add anchor training images to list, and shuffle
     train_img_codes_sample2 = [x for x in train_img_codes_sample if (x not in train_img_codes_nofb)]
@@ -120,7 +128,7 @@ for dim_id in range(np.size(spose, 1)):
     # split feedback training trials in blocks and save trial files
     trial_mat_list = np.split(trial_mat_fb, n_blocks_train)
     for block, trial_mat_split in enumerate(trial_mat_list):
-        fname = path_output + 'traintrials_fb_block' + str(block) + '.csv'  # set file name
+        fname = path_output + 'condition files/traintrials_fb_block' + str(block) + '.csv'  # set file name
         np.savetxt(fname, trial_mat_split, delimiter=",", header=header, comments='')   # save as .csv
     # randomization per participant in psychopy, not here!
 
@@ -143,7 +151,7 @@ for dim_id in range(np.size(spose, 1)):
         trials_nofb_block = range(block * n_trials_nofb_per_block, (block + 1) * n_trials_nofb_per_block)
         trial_mat_exp_block[n_trials_fb_per_block:n_trials_per_block, 0] = [trials_nofb[i] for i in trials_nofb_block]
         # save as csv
-        fname = path_output + 'exptrials_block' + str(block) + '.csv'
+        fname = path_output + 'condition files/exptrials_block' + str(block) + '.csv'
         np.savetxt(fname, trial_mat_exp_block, delimiter=",", header=header, comments='')
 
     ### generate anchor img links
@@ -171,17 +179,8 @@ for dim_id in range(np.size(spose, 1)):
         anchor_img_codes[i_anchor + 1] = [int(img_code) for img_code in img_codes_closest
                                           if img_code not in stim_imgs_20
                                           and img_code not in stim_imgs_train]
-    # save codes of each anchor as csv
-    for i_anchor in range(n_anchors):
-        data = anchor_img_codes[i_anchor]
-        # opening the csv file in 'w+' mode
-        file = open(path_output + 'img_codes_' + str(i_anchor) + '.csv', 'w+', newline='')
-        # writing the data into the file
-        with file:
-            write = csv.writer(file)
-            write.writerow(data)
-    # save as pickle
-    with open(path + 'anchor_img_files/anchor_img_codes_' + str(dim_id) + '.pkl', 'wb') as f:
+    # save codes of each anchor as pickle
+    with open(path_exp_screenshot + 'anchor_img_codes/anchor_img_codes_' + str(dim_id) + '.pkl', 'wb') as f:
         pickle.dump(anchor_img_codes, f)
 
     # get all possible imgs for last (=highest) anchor
@@ -189,21 +188,13 @@ for dim_id in range(np.size(spose, 1)):
                                  if img_code not in stim_imgs_20
                                  and img_code not in stim_imgs_train
                                  ][0: min(n_anchor_imgs_insp_highest, n_anchor_imgs_very)]
-    # save as csv
-    file = open(path_output + 'img_codes_insp_highest.csv', 'w+', newline='')
-    with file:
-        write = csv.writer(file)
-        write.writerow(img_codes_inspect_highest)
     # save as pickle
-    with open(path + 'anchor_img_files/img_codes_insp_highest_' + str(dim_id) + '.pkl', 'wb') as f:
+    with open(path_exp_screenshot + 'anchor_img_codes/img_codes_insp_highest_' + str(dim_id) + '.pkl', 'wb') as f:
         pickle.dump(img_codes_inspect_highest, f)
 
-    # select stimulus images and save them in folder
+    # select stimulus images and copy them to exp folder
     # first for training and test images
     trial_img_list = stim_imgs_train + stim_imgs_20 + stim_imgs_48_nonref + stim_imgs_48_new
-    # create directory to copy selected anchor images to
-    trial_img_dim_path = path_output + 'test images/'
-    os.makedirs(trial_img_dim_path)
-    # copy selected trial images to dim subfolder
+    # copy selected trial images to exp resources folder
     for img_code in trial_img_list:
-        copyfile(path + 'test images/' + str(img_code) + '.jpg', trial_img_dim_path + str(img_code) + '.jpg')
+        copyfile(path_input + 'test images/' + str(img_code) + '.jpg', path_output + 'test images/' + str(img_code) + '.jpg')
