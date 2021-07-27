@@ -1,4 +1,3 @@
-import os
 import numpy as np
 import pickle
 import random
@@ -26,13 +25,14 @@ header = 'img_code,dim_score_true,feedback,dim_score_true_ptile'  # variable nam
 random.seed(808)
 
 # load data
-spose = np.loadtxt(path_input + 'spose_embedding_49d_sorted.txt')  # load true dim scores; path to folder resources
-stim_imgs_20 = np.loadtxt(path_input + 'ref_imgs_20.txt')
+spose = np.loadtxt(path_input + 'spose_embedding_49d_sorted.txt')  # load true dim scores
+stim_imgs_20 = np.loadtxt(path_input + 'ref_imgs_20.txt')  # image codes of reused images from old experiment
+
 stim_imgs_20 = [int(i) for i in list(stim_imgs_20)]  # convert to list of integers
 # generate list of 48 not-ref spose image id's: define img codes
-stim_imgs_48_nonref = list(np.arange(start=1000, stop=1048))  # todo: change to final img codes
+stim_imgs_48_nonref = list(np.arange(start=2000, stop=2048))
 # generate list of 48 not-things spose image id's: define img codes
-stim_imgs_48_new = list(np.arange(start=1500, stop=1548))  # todo: change to final img codes
+stim_imgs_48_new = list(np.arange(start=3000, stop=3048))
 # combine 48 and 48 to all_no-feedback_trials and randomize
 trials_fb = stim_imgs_20  # don't random shuffle to keep alignment to indices
 trials_nofb = stim_imgs_48_nonref + stim_imgs_48_new
@@ -199,3 +199,4 @@ for dim_id in range(np.size(spose, 1)):
     # copy selected trial images to exp resources folder
     for img_code in trial_img_list:
         copyfile(path_input + 'test images/' + str(img_code) + '.jpg', path_output + 'test images/' + str(img_code) + '.jpg')
+    print(dim_id)
