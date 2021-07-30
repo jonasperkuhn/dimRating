@@ -9,6 +9,8 @@ path_input = 'C:/Users/joper/PycharmProjects/dimRating/data/'
 path_exp_screenshot = 'C:/Private/Studium/Studium Leipzig/Masterarbeit/DimRating/Psychopy Screenshot/resources/'
 # set path to final online experiments folder (one exp per dim)
 path_exps_final = 'C:/Private/Studium/Studium Leipzig/Masterarbeit/DimRating/final exps/'
+# set path to dimRating output folder, where percentiles will be saved
+path_ptiles = 'C:/Users/joper/PycharmProjects/dimRating/output/percentiles/'
 
 # set params
 n_trials_train = 190  # number of total training trials
@@ -81,7 +83,7 @@ for dim_id in range(np.size(spose, 1)):
         ptiles_all[all_ind] = ptiles_nonzero_scaled[nonzero_ind]
     for zero_ind, all_ind in enumerate(img_ind_zero):
         ptiles_all[all_ind] = ptiles_zero_scaled[zero_ind]
-    fname = path_output + 'ptiles_all.csv'  # set file name
+    fname = path_ptiles + 'ptiles_dim' + dim_id + '.csv'  # set file name
     np.savetxt(fname, ptiles_all, delimiter=",", comments='')   # save as .csv
     # extract image codes for each anchor range, and sort from closest to to furthest from anchor
     for i_anchor in range(n_anchors_pos):
