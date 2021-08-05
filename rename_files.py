@@ -2,12 +2,12 @@
 import os
 import csv
 
-path = '/data/'
+path = 'C:/Users/joper/PycharmProjects/dimRating/data/'
 # load unique_ids (img names in sequence as spose embedding)
 with open(path + 'unique_id.csv', newline='') as f:
     reader = csv.reader(f)
     unique_ids = [i[0] + '.jpg' for i in list(reader)]
-path_imgs = path + 'anchor images'
+path_imgs = path + 'test images'
 files = os.listdir(path_imgs)
 # rename files with unique_id index
 for file in files:

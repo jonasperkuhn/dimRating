@@ -46,7 +46,7 @@ def get_ptiles(dim_scores, zero_cutoff, n_anchors_pos, dim_id, path_ptiles):
         ptiles_all[all_ind] = ptiles_nonzero_scaled[nonzero_ind]
     for zero_ind, all_ind in enumerate(img_ind_zero):
         ptiles_all[all_ind] = ptiles_zero_scaled[zero_ind]
-    fname = path_ptiles + 'ptiles_dim' + dim_id + '.csv'  # set file name
+    fname = path_ptiles + 'ptiles_dim' + str(dim_id) + '.csv'  # set file name
     np.savetxt(fname, ptiles_all, delimiter=",", comments='')  # save as .csv
     return ptiles_all, ptiles_nonzero, img_ind_nonzero, img_ind_zero
 
@@ -154,15 +154,11 @@ path_exps_final = 'C:/Private/Studium/Studium Leipzig/Masterarbeit/DimRating/fin
 # set path to dimRating output folder, where percentiles will be saved
 path_ptiles = 'C:/Users/joper/PycharmProjects/dimRating/output/percentiles/'
 
-# load/create data
-spose, stim_imgs_20, stim_imgs_48_nonref, stim_imgs_48_new = get_data(path_input = path_input)
-
 # set params
 n_trials_train = 190  # number of total training trials
 n_trials_train_nofb = 10  # number of trials were no feedback will be given anymore
 n_anchors = 7  # number of dim scale anchors
 n_anchors_pos = n_anchors - 1
-anchor_step_scaled = 1/(n_anchors_pos)
 n_anchor_imgs = 15  # max number of imgs per anchor
 n_anchor_imgs_insp_highest = 36  # max number of imgs displayed in the inspect_highest_anchor_imgs routine
 zero_cutoff = 0.3  # scale cutoff, to calculate percentiles separately below and above cutoff for a percentile scale that also differentiates the high values (else biased by many low values)
@@ -171,6 +167,9 @@ n_blocks_exp = 2  # number of experimental blocks: set to a number that 96, 20, 
 header = 'img_code,dim_score_true,feedback,dim_score_true_ptile'  # variable names in input csv's
 random.seed(808)
 
+
+# load/create data
+spose, stim_imgs_20, stim_imgs_48_nonref, stim_imgs_48_new = get_data(path_input=path_input)
 # combine 48 and 48 to all_no-feedback_trials and randomize
 trials_fb = stim_imgs_20  # don't random shuffle to keep alignment to indices
 trials_nofb = stim_imgs_48_nonref + stim_imgs_48_new
@@ -184,28 +183,28 @@ n_trials_nofb_per_block = int(len(trials_nofb) / n_blocks_exp)
 
 # loop over dims
 for dim_id in range(np.size(spose, 1)):
-    path_output = get_dim_paths(dim_id = dim_id, path_exps_final = path_exps_final)  # get output path
+    path_output = get_dim_paths(dim_id=dim_id, path_exps_final=path_exps_final)  # get output path
     dim_scores = spose[:, dim_id]  # select dimension specific data
     object_indices = list(np.arange(len(dim_scores)))  # create list of indices to convert to img codes
     # compute percentiles
-    ptiles_all, ptiles_nonzero, img_ind_nonzero, img_ind_zero = get_ptiles(dim_scores = dim_scores,
-        zero_cutoff = zero_cutoff, n_anchors_pos = n_anchors_pos, dim_id = dim_id, path_ptiles = path_ptiles)
-    # generate anchor img links
-    anchor_images_examples, n_anchor_imgs_very, anchor_dev = get_anchor_imgs(n_anchor_imgs=n_anchor_imgs,
-        ptiles_nonzero = ptiles_nonzero, img_ind_nonzero = img_ind_nonzero, img_ind_zero = img_ind_zero,
-            n_anchors_pos = n_anchors_pos, stim_imgs_20 = stim_imgs_20, path_exp_screenshot = path_exp_screenshot)
+    ptiles_all, ptiles_nonzero, img_ind_nonzero, img_ind_zero = get_ptiles(dim_scores=dim_scores,
+        zero_cutoff=zero_cutoff, n_anchors_pos=n_anchors_pos, dim_id=dim_id, path_ptiles=path_ptiles)
+    # generate and save anchor img links
+    anchor_images_examples, n_anchor_imgs_very, anchor_dev_highest = get_anchor_imgs(n_anchor_imgs=n_anchor_imgs,
+        ptiles_nonzero=ptiles_nonzero, img_ind_nonzero=img_ind_nonzero, img_ind_zero=img_ind_zero,
+            n_anchors_pos=n_anchors_pos, stim_imgs_20=stim_imgs_20, path_exp_screenshot=path_exp_screenshot)
     # generate and save training trial csv's
-    stim_imgs_train = save_train_trials(object_indices = object_indices, anchor_images_examples=anchor_images_examples,
-        stim_imgs_20 = stim_imgs_20, n_trials_train = n_trials_train, n_trials_train_nofb = n_trials_train_nofb,
-            n_anchors_pos = n_anchors_pos, n_blocks_train = n_blocks_train, header = header, path_output = path_output)
+    stim_imgs_train = save_train_trials(object_indices=object_indices, anchor_images_examples=anchor_images_examples,
+        stim_imgs_20=stim_imgs_20, n_trials_train=n_trials_train, n_trials_train_nofb=n_trials_train_nofb,
+            n_anchors_pos=n_anchors_pos, n_blocks_train=n_blocks_train, header=header, path_output=path_output)
     # generate exp trial csv
-    save_exp_trials(dim_scores = dim_scores, n_blocks_exp = n_blocks_exp, n_trials_per_block = n_trials_per_block,
-        n_trials_fb_per_block = n_trials_fb_per_block, n_trials_nofb_per_block = n_trials_nofb_per_block, trials_fb = trials_fb,
-            trials_nofb = trials_nofb, ptiles_all = ptiles_all, stim_imgs_20 = stim_imgs_20, header = header, path_output = path_output)
+    save_exp_trials(dim_scores=dim_scores, n_blocks_exp=n_blocks_exp, n_trials_per_block=n_trials_per_block,
+        n_trials_fb_per_block=n_trials_fb_per_block, n_trials_nofb_per_block=n_trials_nofb_per_block, trials_fb=trials_fb,
+            trials_nofb=trials_nofb, ptiles_all=ptiles_all, stim_imgs_20=stim_imgs_20, header=header, path_output=path_output)
 
     # get all possible imgs for last (=highest) anchor
     # select after creating training trials, to avoid excluding all high imgs from training
-    img_codes_inspect_highest = [img_ind_nonzero[img_code] for img_code in np.argsort(anchor_dev)
+    img_codes_inspect_highest = [img_ind_nonzero[img_code] for img_code in np.argsort(anchor_dev_highest)
                                  if img_code not in stim_imgs_20
                                  and img_code not in stim_imgs_train
                                  ][0: min(n_anchor_imgs_insp_highest, n_anchor_imgs_very)]
