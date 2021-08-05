@@ -26,19 +26,14 @@ n_blocks_exp = 2  # number of experimental blocks: set to a number that 96, 20, 
 header = 'img_code,dim_score_true,feedback,dim_score_true_ptile'  # variable names in input csv's
 random.seed(808)
 
-# load data
-spose = np.loadtxt(path_input + 'spose_embedding_49d_sorted.txt')  # load true dim scores
-stim_imgs_20 = np.loadtxt(path_input + 'ref_imgs_20.txt')  # image codes of reused images from old experiment
+# load/create data
+spose, stim_imgs_20, stim_imgs_48_nonref, stim_imgs_48_new = get_data()
 
-stim_imgs_20 = [int(i) for i in list(stim_imgs_20)]  # convert to list of integers
-# generate list of 48 not-ref spose image id's: define img codes
-stim_imgs_48_nonref = list(np.arange(start=2000, stop=2048))
-# generate list of 48 not-things spose image id's: define img codes
-stim_imgs_48_new = list(np.arange(start=3000, stop=3048))
 # combine 48 and 48 to all_no-feedback_trials and randomize
 trials_fb = stim_imgs_20  # don't random shuffle to keep alignment to indices
 trials_nofb = stim_imgs_48_nonref + stim_imgs_48_new
 random.shuffle(trials_nofb)
+
 # calc trial numbers
 n_trials = len(trials_fb + trials_nofb)
 n_trials_per_block = int(n_trials / n_blocks_exp)
@@ -47,6 +42,7 @@ n_trials_nofb_per_block = int(len(trials_nofb) / n_blocks_exp)
 
 # loop over dims
 for dim_id in range(np.size(spose, 1)):
+    ### create paths and compute variables
     # copy template experiment folder n_dims times, to create separate experiments for each spose dimension
         # first create template experiment folder manually, with resources subfolders for condition files, screenshots,
         # and test images, as well as the mouse-cursor-img.png
@@ -54,11 +50,11 @@ for dim_id in range(np.size(spose, 1)):
     copytree(path_exps_final + 'dimrating_template_folder', dim_exp_folder_path)
     # define output path as resources folder of newly created experiment folder
     path_output = dim_exp_folder_path + 'resources/'
-    ### generate training trial csv
     # select data relevant for dimension and add img codes
     dim_scores = spose[:, dim_id]
     object_indices = list(np.arange(len(dim_scores)))  # create list of indices to convert to img codes
-    # dim_scores_ind = np.vstack((dim_scores, np.array(object_indices))).T  # currently not needed
+
+    ### compute percentiles
     # select imgs above cutoff
     img_ind_nonzero = list(np.where(dim_scores > zero_cutoff)[0])
     # select one training image for each anchor (first image of anchor)
@@ -85,7 +81,14 @@ for dim_id in range(np.size(spose, 1)):
         ptiles_all[all_ind] = ptiles_zero_scaled[zero_ind]
     fname = path_ptiles + 'ptiles_dim' + dim_id + '.csv'  # set file name
     np.savetxt(fname, ptiles_all, delimiter=",", comments='')   # save as .csv
-    # extract image codes for each anchor range, and sort from closest to to furthest from anchor
+
+
+    ### generate anchor img links
+    # initialize anchor img code dict
+    anchor_img_codes = {}
+    # randomly choose n_anchor_imgs imgs of zero imgs (below cutoff) as anchor imgs
+    anchor_img_codes[0] = np.random.choice(img_ind_zero, n_anchor_imgs, replace=False)
+    # extract image codes for each anchor range, and sort from closest to furthest away
     for i_anchor in range(n_anchors_pos):
         # determine anchor percentile
         ptile_anchor = i_anchor / (n_anchors_pos - 1) * 100
@@ -99,10 +102,16 @@ for dim_id in range(np.size(spose, 1)):
         # for other anchors, take all n_anchor_imgs imgs (no threat of overlap)
         else:
             img_codes_closest = [img_ind_nonzero[img] for img in np.argsort(anchor_dev)][0: n_anchor_imgs]
-        # remove training images and previously rated 20 images (because they will be tested)
-        anchor_images = [img_code for img_code in img_codes_closest
-                               if img_code not in stim_imgs_20]
-        anchor_images_examples.append(anchor_images[-1])  # append last (furthest away) anchor image
+        # remove previously rated 20 images (because they will be tested)
+        anchor_img_codes[i_anchor + 1] = [int(img_code) for img_code in img_codes_closest
+                                          if img_code not in stim_imgs_20]
+
+        anchor_images_examples.append(anchor_img_codes[i_anchor + 1][-1])  # append last (furthest away) anchor image
+    # save codes of each anchor as pickle
+    with open(path_exp_screenshot + 'anchor_img_codes/anchor_img_codes_' + str(dim_id) + '.pkl', 'wb') as f:
+        pickle.dump(anchor_img_codes, f)
+
+    ### generate training trial csv
     # select training images set to sample from, without anchor images and 20 test images
     train_img_pop = [x for x in object_indices if (x not in anchor_images_examples) and (x not in stim_imgs_20)]
     # randomly select n_training_imgs-n_anchors images
@@ -133,7 +142,9 @@ for dim_id in range(np.size(spose, 1)):
     for block, trial_mat_split in enumerate(trial_mat_list):
         fname = path_output + 'condition files/traintrials_fb_block' + str(block) + '.csv'  # set file name
         np.savetxt(fname, trial_mat_split, delimiter=",", header=header, comments='')   # save as .csv
-    # randomization per participant in psychopy, not here!
+        # randomization per participant in psychopy, not here
+    # get list of all training img codes
+    stim_imgs_train = train_img_codes_fb + train_img_codes_nofb
 
     ### generate exp trial csv
     range_scores_nonzero = max(dim_scores) - min(dim_scores[np.where(dim_scores > 0.3)])
@@ -157,36 +168,8 @@ for dim_id in range(np.size(spose, 1)):
         fname = path_output + 'condition files/exptrials_block' + str(block) + '.csv'
         np.savetxt(fname, trial_mat_exp_block, delimiter=",", header=header, comments='')
 
-    ### generate anchor img links
-    # get list of all training img codes, to remove from dimension stimuli
-    stim_imgs_train = train_img_codes_fb + train_img_codes_nofb
-    # initialize anchor img code dict
-    anchor_img_codes = {}
-    # randomly choose n_anchor_imgs imgs of zero imgs (below cutoff) as anchor imgs
-    anchor_img_codes[0] = np.random.choice(img_ind_zero, n_anchor_imgs, replace=False)
-    # extract image codes for each anchor range, and sort from closest to furthest away
-    for i_anchor in range(n_anchors_pos):
-        # determine anchor percentile
-        ptile_anchor = i_anchor / (n_anchors_pos - 1) * 100
-        # calculate percentile deviance of each percentile
-        anchor_dev = [np.abs(ptile - ptile_anchor) for ptile in ptiles_nonzero]
-        # select n_anchor_imgs of lowest deviating percentiles
-        # for very high and very low anchor, choose max. n_anchor_imgs_very imgs, to avoid img overlap to other anchors
-        if i_anchor in [0, n_anchors_pos - 1]:
-            img_codes_closest = [img_ind_nonzero[img]
-                                 for img in np.argsort(anchor_dev)][0:min(n_anchor_imgs, n_anchor_imgs_very)]
-        # for other anchors, take all n_anchor_imgs imgs (no threat of overlap)
-        else:
-            img_codes_closest = [img_ind_nonzero[img] for img in np.argsort(anchor_dev)][0: n_anchor_imgs]
-        # remove training images and previously rated 20 images (because they will be tested)
-        anchor_img_codes[i_anchor + 1] = [int(img_code) for img_code in img_codes_closest
-                                          if img_code not in stim_imgs_20
-                                          and img_code not in stim_imgs_train]
-    # save codes of each anchor as pickle
-    with open(path_exp_screenshot + 'anchor_img_codes/anchor_img_codes_' + str(dim_id) + '.pkl', 'wb') as f:
-        pickle.dump(anchor_img_codes, f)
-
-    # get all possible imgs for last (=highest) anchor
+    ### get all possible imgs for last (=highest) anchor
+    # select after creating training trials, to avoid excluding all high imgs from training
     img_codes_inspect_highest = [img_ind_nonzero[img_code] for img_code in np.argsort(anchor_dev)
                                  if img_code not in stim_imgs_20
                                  and img_code not in stim_imgs_train
@@ -195,7 +178,7 @@ for dim_id in range(np.size(spose, 1)):
     with open(path_exp_screenshot + 'anchor_img_codes/img_codes_insp_highest_' + str(dim_id) + '.pkl', 'wb') as f:
         pickle.dump(img_codes_inspect_highest, f)
 
-    # select stimulus images and copy them to exp folder
+    ### select stimulus images and copy them to exp folder
     # first for training and test images
     trial_img_list = stim_imgs_train + stim_imgs_20 + stim_imgs_48_nonref + stim_imgs_48_new
     # copy selected trial images to exp resources folder
