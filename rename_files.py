@@ -7,7 +7,7 @@ path = 'C:/Users/joper/PycharmProjects/dimRating/data/'
 with open(path + 'unique_id.csv', newline='') as f:
     reader = csv.reader(f)
     unique_ids = [i[0] + '.jpg' for i in list(reader)]
-path_imgs = path + 'test images'
+path_imgs = path + 'images_old names'
 files = os.listdir(path_imgs)
 # rename files with unique_id index
 for file in files:
