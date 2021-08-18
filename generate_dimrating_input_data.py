@@ -9,9 +9,11 @@ def get_data(path_input):
     stim_imgs_20 = [int(i) for i in list(stim_imgs_20)]  # convert to list of integers
     # generate list of 48 not-ref spose image id's: define img codes
     stim_imgs_48_nonref = list(np.arange(start=2000, stop=2048))
+    concept_codes_48_nonref = np.loadtxt(path_input + 'nonref_imgs_48_concept_codes.txt')  # image codes of reused images from old experiment
+    concept_codes_48_nonref = [int(i) for i in list(concept_codes_48_nonref)]
     # generate list of 48 not-things spose image id's: define img codes
     stim_imgs_48_new = list(np.arange(start=3000, stop=3048))
-    return spose, stim_imgs_20, stim_imgs_48_nonref, stim_imgs_48_new
+    return spose, stim_imgs_20, stim_imgs_48_nonref, concept_codes_48_nonref, stim_imgs_48_new
 
 def get_dim_paths(dim_id, path_exps_final):
     # copy template experiment folder n_dims times, to create separate experiments for each spose dimension
@@ -50,7 +52,7 @@ def get_ptiles(dim_scores, zero_cutoff, n_anchors_pos, dim_id, path_ptiles):
     np.savetxt(fname, ptiles_all, delimiter=",", comments='')  # save as .csv
     return ptiles_all, ptiles_nonzero, img_ind_nonzero, img_ind_zero
 
-def get_anchor_imgs(n_anchor_imgs, ptiles_nonzero, img_ind_nonzero, img_ind_zero, n_anchors_pos, stim_imgs_20, path_exp_screenshot):
+def get_anchor_imgs(n_anchor_imgs, ptiles_nonzero, img_ind_nonzero, img_ind_zero, n_anchors_pos, stim_imgs_20, concept_codes_48_nonref, path_exp_screenshot):
     # initialize anchor img code dict
     anchor_img_codes = {}
     anchor_images_examples = []
@@ -72,9 +74,9 @@ def get_anchor_imgs(n_anchor_imgs, ptiles_nonzero, img_ind_nonzero, img_ind_zero
         # for other anchors, take all n_anchor_imgs imgs (no threat of overlap)
         else:
             img_codes_closest = [img_ind_nonzero[img] for img in np.argsort(anchor_dev)][0: n_anchor_imgs]
-        # remove previously rated 20 images (because they will be tested)
+        # remove previously rated ref images and corresponding nonref concept images (because they will be tested)
         anchor_img_codes[i_anchor + 1] = [int(img_code) for img_code in img_codes_closest
-                                          if img_code not in stim_imgs_20]
+                                          if img_code not in stim_imgs_20 and img_code not in concept_codes_48_nonref]
 
         anchor_images_examples.append(anchor_img_codes[i_anchor + 1][-1])  # append last (furthest away) anchor image
     # save codes of each anchor as pickle
@@ -159,7 +161,7 @@ n_trials_train = 190  # number of total training trials
 n_trials_train_nofb = 10  # number of trials were no feedback will be given anymore
 n_anchors = 7  # number of dim scale anchors
 n_anchors_pos = n_anchors - 1
-n_anchor_imgs = 13  # max number of imgs per anchor
+n_anchor_imgs = 15  # max number of imgs per anchor
 n_anchor_imgs_insp_highest = 36  # max number of imgs displayed in the inspect_highest_anchor_imgs routine
 zero_cutoff = 0.3  # scale cutoff, to calculate percentiles separately below and above cutoff for a percentile scale that also differentiates the high values (else biased by many low values)
 n_blocks_train = 3  # number of training blocks
@@ -169,7 +171,7 @@ random.seed(808)
 
 
 # load/create data
-spose, stim_imgs_20, stim_imgs_48_nonref, stim_imgs_48_new = get_data(path_input=path_input)
+spose, stim_imgs_20, stim_imgs_48_nonref, concept_codes_48_nonref, stim_imgs_48_new = get_data(path_input=path_input)
 # combine 48 and 48 to all_no-feedback_trials and randomize
 trials_fb = stim_imgs_20  # don't random shuffle to keep alignment to indices
 trials_nofb = stim_imgs_48_nonref + stim_imgs_48_new
@@ -192,7 +194,8 @@ for dim_id in range(np.size(spose, 1)):
     # generate and save anchor img links
     anchor_images_examples, n_anchor_imgs_very, anchor_dev_highest = get_anchor_imgs(n_anchor_imgs=n_anchor_imgs,
         ptiles_nonzero=ptiles_nonzero, img_ind_nonzero=img_ind_nonzero, img_ind_zero=img_ind_zero,
-            n_anchors_pos=n_anchors_pos, stim_imgs_20=stim_imgs_20, path_exp_screenshot=path_exp_screenshot)
+            n_anchors_pos=n_anchors_pos, stim_imgs_20=stim_imgs_20, concept_codes_48_nonref=concept_codes_48_nonref,
+                path_exp_screenshot=path_exp_screenshot)
     # generate and save training trial csv's
     stim_imgs_train = save_train_trials(object_indices=object_indices, anchor_images_examples=anchor_images_examples,
         stim_imgs_20=stim_imgs_20, n_trials_train=n_trials_train, n_trials_train_nofb=n_trials_train_nofb,
