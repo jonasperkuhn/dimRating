@@ -52,18 +52,33 @@ def get_ptiles(dim_scores, zero_cutoff, n_anchors_pos, dim_id, path_ptiles):
     np.savetxt(fname, ptiles_all, delimiter=",", comments='')  # save as .csv
     return ptiles_all, ptiles_nonzero, img_ind_nonzero, img_ind_zero
 
+def exclude_test_imgs(img_ind_zero, ptiles_nonzero, img_ind_nonzero, stim_imgs_ref, concept_codes_48_nonref):
+    # remove previously rated ref images and corresponding nonref concept images from anchor img code pop
+    # (because they will be tested)
+    img_ind_zero = [i for i in img_ind_zero if i not in stim_imgs_ref and i not in concept_codes_48_nonref]
+    # get logical vector that's positive when images are part of the test image set (see above)
+    ind_imgs_to_keep_nonzero = np.ma.masked_array([i not in stim_imgs_ref and i not in concept_codes_48_nonref for i in img_ind_nonzero])
+    # filter percentiles based on logical vector
+    ptiles_nonzero_np = np.array(ptiles_nonzero)  # convert to np array for indexing
+    ptiles_nonzero_excluded = ptiles_nonzero_np[ind_imgs_to_keep_nonzero]
+    ptiles_nonzero = ptiles_nonzero_excluded.tolist()
+    # same for corresponding img index array
+    img_ind_nonzero_np = np.array(img_ind_nonzero)
+    img_ind_nonzero_excluded = img_ind_nonzero_np[ind_imgs_to_keep_nonzero]
+    img_ind_nonzero = img_ind_nonzero_excluded.tolist()
+    return img_ind_zero, ptiles_nonzero, img_ind_nonzero
+
 def get_anchor_imgs(n_anchor_imgs, ptiles_nonzero, img_ind_nonzero, img_ind_zero, n_anchors_pos, stim_imgs_ref, concept_codes_48_nonref, path_exp_screenshot):
     # initialize anchor img code dict
     anchor_img_codes = {}
     anchor_images_examples = []
     # get maximum nr of images for highest anchor
     n_anchor_imgs_very = int(len(img_ind_nonzero) / n_anchors_pos / 2)
-    # remove previously rated ref images and corresponding nonref concept images from anchor pop (because they will be tested)
-    img_ind_zero = [i for i in img_ind_zero if i not in stim_imgs_ref and i not in concept_codes_48_nonref]
-    # get logical vector that's positive when images are part of the test image set (see above)
-    ind_imgs_to_keep_nonzero = np.ma.masked_array([i not in stim_imgs_ref and i not in concept_codes_48_nonref for i in img_ind_nonzero])
-    # filter percentiles and corresponding img index array based on logical vector
-    ptiles_nonzero = ix = ptiles_nonzero[ind_imgs_to_keep_nonzero]
+    # remove previously rated ref images and corresponding nonref concept images from anchor img code pops
+    # (because they will be tested)
+    img_ind_zero, ptiles_nonzero, img_ind_nonzero = exclude_test_imgs(img_ind_zero=img_ind_zero,
+        ptiles_nonzero=ptiles_nonzero, img_ind_nonzero=img_ind_nonzero, stim_imgs_ref=stim_imgs_ref,
+            concept_codes_48_nonref=concept_codes_48_nonref)
     # randomly choose n_anchor_imgs imgs of zero imgs (below cutoff) as anchor imgs
     anchor_img_codes[0] = np.random.choice(img_ind_zero, n_anchor_imgs, replace=False)
     # extract image codes for each anchor range, and sort from closest to furthest away
@@ -215,6 +230,7 @@ for dim_id in range(np.size(spose, 1)):
     # select after creating training trials, to avoid excluding all high imgs from training
     img_codes_inspect_highest = [img_ind_nonzero[img_code] for img_code in np.argsort(anchor_dev_highest)
                                  if img_code not in stim_imgs_ref
+                                 and img_code not in concept_codes_48_nonref
                                  and img_code not in stim_imgs_train
                                  ][0: min(n_anchor_imgs_insp_highest, n_anchor_imgs_very)]
     # save as pickle
