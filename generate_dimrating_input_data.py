@@ -5,15 +5,15 @@ from shutil import copyfile, copytree
 
 def get_data(path_input):
     spose = np.loadtxt(path_input + 'spose_embedding_49d_sorted.txt')  # load true dim scores
-    stim_imgs_20 = np.loadtxt(path_input + 'ref_imgs_20.txt')  # image codes of reused images from old experiment
-    stim_imgs_20 = [int(i) for i in list(stim_imgs_20)]  # convert to list of integers
+    stim_imgs_ref = np.loadtxt(path_input + 'ref_imgs_200.txt')  # image codes of reused images from old experiment
+    stim_imgs_ref = [int(i) for i in list(stim_imgs_ref)]  # convert to list of integers
     # generate list of 48 not-ref spose image id's: define img codes
     stim_imgs_48_nonref = list(np.arange(start=2000, stop=2048))
     concept_codes_48_nonref = np.loadtxt(path_input + 'nonref_imgs_48_concept_codes.txt')  # image codes of reused images from old experiment
     concept_codes_48_nonref = [int(i) for i in list(concept_codes_48_nonref)]
     # generate list of 48 not-things spose image id's: define img codes
     stim_imgs_48_new = list(np.arange(start=3000, stop=3048))
-    return spose, stim_imgs_20, stim_imgs_48_nonref, concept_codes_48_nonref, stim_imgs_48_new
+    return spose, stim_imgs_ref, stim_imgs_48_nonref, concept_codes_48_nonref, stim_imgs_48_new
 
 def get_dim_paths(dim_id, path_exps_final):
     # copy template experiment folder n_dims times, to create separate experiments for each spose dimension
@@ -95,10 +95,6 @@ def get_anchor_imgs(n_anchor_imgs, ptiles_nonzero, img_ind_nonzero, img_ind_zero
         # for other anchors, take all n_anchor_imgs imgs (no threat of overlap)
         else:
             img_codes_closest = [img_ind_nonzero[img] for img in np.argsort(anchor_dev)][0: n_anchor_imgs]
-        # remove previously rated ref images and corresponding nonref concept images (because they will be tested)
-        anchor_img_codes[i_anchor + 1] = [int(img_code) for img_code in img_codes_closest
-                                          if img_code not in stim_imgs_ref and img_code not in concept_codes_48_nonref]
-
         anchor_images_examples.append(anchor_img_codes[i_anchor + 1][-1])  # append last (furthest away) anchor image
     # save codes of each anchor as pickle
     with open(path_exp_screenshot + 'anchor_img_codes/anchor_img_codes_' + str(dim_id) + '.pkl', 'wb') as f:
@@ -114,10 +110,11 @@ def create_trial_mat(fb: int, n_trials_train_mat, train_img_codes, ptiles_all, d
     trial_mat[:, 3] = [ptiles_all[i] for i in train_img_codes_ind]  # add true_dim_score_ptile
     return trial_mat
 
-def save_train_trials(object_indices, anchor_images_examples, stim_imgs_20, n_trials_train, n_trials_train_nofb,
+def save_train_trials(object_indices, anchor_images_examples, stim_imgs_ref, n_trials_train, n_trials_train_nofb,
                       n_anchors_pos, n_blocks_train, header, path_output):
     # select training images set to sample from, without anchor images and 20 test images
-    train_img_pop = [x for x in object_indices if (x not in anchor_images_examples) and (x not in stim_imgs_20)]
+    train_img_pop = [x for x in object_indices if (x not in anchor_images_examples) and (x not in stim_imgs_ref)
+                     and (x not in concept_codes_48_nonref)]
     # randomly select n_training_imgs-n_anchors images
     train_img_codes_sample = random.sample(train_img_pop, n_trials_train - n_anchors_pos)
     # create no-feedback training trials and save as csv
@@ -143,25 +140,31 @@ def save_train_trials(object_indices, anchor_images_examples, stim_imgs_20, n_tr
     stim_imgs_train = train_img_codes_fb + train_img_codes_nofb
     return stim_imgs_train
 
-def save_exp_trials(dim_scores, n_blocks_exp, n_trials_per_block, n_trials_fb_per_block, n_trials_nofb_per_block,
-                    trials_fb, trials_nofb, ptiles_all, stim_imgs_20, header, path_output):
+def save_exp_trials(dim_scores, n_blocks_exp, n_trials_exp, n_trials_exp_fb,
+                    trials_ref, trials_nonref_new, ptiles_all, stim_imgs_ref, header, path_output):
     range_scores_nonzero = max(dim_scores) - min(dim_scores[np.where(dim_scores > 0.3)])
+    # calculate trial numbers
+    n_trials_per_block = int(n_trials_exp / n_blocks_exp)  # calc number of total trials per experimental block
+    n_trials_ref_per_block = int(len(trials_ref) / n_blocks_exp)  # calc n of ref img trials per block
+    n_trials_nonref_new_per_block = int(len(trials_nonref_new) / n_blocks_exp)  # calc n of nonref+new img trials per block
+    n_trials_fb_per_block = round(n_trials_exp_fb / n_blocks_exp)  # calc n of feedback trials per block
     # create exp trial matrix blockwise
     for block in range(n_blocks_exp):
         # initialize experimental trial matrix
         trial_mat_exp_block = np.zeros((n_trials_per_block, 4))
-        # add 20/n_blocks trials
-        trials_fb_block = range(block * n_trials_fb_per_block, (block + 1) * n_trials_fb_per_block)
-        trial_mat_exp_block[0:n_trials_fb_per_block, 0] = [trials_fb[i] for i in trials_fb_block]
+        # add n_trials_ref/n_blocks trials
+        trials_ref_block = range(block * n_trials_ref_per_block, (block + 1) * n_trials_ref_per_block)
+        trial_mat_exp_block[0:n_trials_ref_per_block, 0] = [trials_ref[i] for i in trials_ref_block]
         # add true_dim_score for feedback img
-        trial_mat_exp_block[0:n_trials_fb_per_block, 1] = [dim_scores[int(stim_imgs_20[i])] for i in trials_fb_block]
-        # set feedback to 1 for feedback img
-        trial_mat_exp_block[0:n_trials_fb_per_block, 2] = 1
+        trial_mat_exp_block[0:n_trials_ref_per_block, 1] = [dim_scores[int(stim_imgs_ref[i])] for i in trials_ref_block]
+        # set feedback to 1 for part of exp imgs
+        trials_fb_block = random.sample(range(0, n_trials_ref_per_block), k=n_trials_fb_per_block)  # randomly select part of ref img trials
+        trial_mat_exp_block[trials_fb_block, 2] = 1
         # add true_dim_score_ptile for feedback img
-        trial_mat_exp_block[0:n_trials_fb_per_block, 3] = [ptiles_all[int(stim_imgs_20[i])] for i in trials_fb_block]
-        # add 96/n_blocks feedback trials
-        trials_nofb_block = range(block * n_trials_nofb_per_block, (block + 1) * n_trials_nofb_per_block)
-        trial_mat_exp_block[n_trials_fb_per_block:n_trials_per_block, 0] = [trials_nofb[i] for i in trials_nofb_block]
+        trial_mat_exp_block[0:n_trials_ref_per_block, 3] = [ptiles_all[int(stim_imgs_ref[i])] for i in trials_ref_block]
+        # add nonref+new trials
+        trials_nonref_new_block = range(block * n_trials_nonref_new_per_block, (block + 1) * n_trials_nonref_new_per_block)
+        trial_mat_exp_block[n_trials_ref_per_block:n_trials_per_block, 0] = [trials_nonref_new[i] for i in trials_nonref_new_block]
         # save as csv
         fname = path_output + 'condition files/exptrials_block' + str(block) + '.csv'
         np.savetxt(fname, trial_mat_exp_block, delimiter=",", header=header, comments='')
@@ -178,15 +181,17 @@ path_exps_final = 'C:/Private/Studium/Studium Leipzig/Masterarbeit/DimRating/fin
 path_ptiles = 'C:/Users/joper/PycharmProjects/dimRating/output/percentiles/'
 
 # set params
-n_trials_train = 190  # number of total training trials
+n_trials_train = 130  # number of total training trials
 n_trials_train_nofb = 10  # number of trials were no feedback will be given anymore
+n_trials_exp = 296  # number of total test trials
+n_trials_exp_fb = 59  # number of test trials during which feedback will be given
 n_anchors = 7  # number of dim scale anchors
 n_anchors_pos = n_anchors - 1
-n_anchor_imgs = 13  # max number of imgs per anchor
+n_anchor_imgs = 12  # max number of imgs per anchor
 n_anchor_imgs_insp_highest = 36  # max number of imgs displayed in the inspect_highest_anchor_imgs routine
 zero_cutoff = 0.3  # scale cutoff, to calculate percentiles separately below and above cutoff for a percentile scale that also differentiates the high values (else biased by many low values)
 n_blocks_train = 3  # number of training blocks
-n_blocks_exp = 2  # number of experimental blocks: set to a number that 96, 20, and (96 + 20 =) 116 can be divided by -> 2 or 4
+n_blocks_exp = 4  # number of experimental blocks: set to a number that 96, 200, and (96 + 20 =) 296 can be divided by -> 2 or 4
 header = 'img_code,dim_score_true,feedback,dim_score_true_ptile'  # variable names in input csv's
 random.seed(808)
 
@@ -194,15 +199,9 @@ random.seed(808)
 # load/create data
 spose, stim_imgs_ref, stim_imgs_48_nonref, concept_codes_48_nonref, stim_imgs_48_new = get_data(path_input=path_input)
 # combine 48 and 48 to all_no-feedback_trials and randomize
-trials_fb = stim_imgs_ref  # don't random shuffle to keep alignment to indices
-trials_nofb = stim_imgs_48_nonref + stim_imgs_48_new
-random.shuffle(trials_nofb)
-
-# calc trial numbers
-n_trials = len(trials_fb + trials_nofb)
-n_trials_per_block = int(n_trials / n_blocks_exp)
-n_trials_fb_per_block = int(len(trials_fb) / n_blocks_exp)
-n_trials_nofb_per_block = int(len(trials_nofb) / n_blocks_exp)
+trials_ref = stim_imgs_ref  # don't random shuffle to keep alignment to indices
+trials_nonref_new = stim_imgs_48_nonref + stim_imgs_48_new
+random.shuffle(trials_nonref_new)
 
 # loop over dims
 for dim_id in range(np.size(spose, 1)):
@@ -223,8 +222,8 @@ for dim_id in range(np.size(spose, 1)):
                                         n_anchors_pos=n_anchors_pos, n_blocks_train=n_blocks_train, header=header, path_output=path_output)
     # generate exp trial csv
     save_exp_trials(dim_scores=dim_scores, n_blocks_exp=n_blocks_exp, n_trials_per_block=n_trials_per_block,
-                    n_trials_fb_per_block=n_trials_fb_per_block, n_trials_nofb_per_block=n_trials_nofb_per_block, trials_fb=trials_fb,
-                    trials_nofb=trials_nofb, ptiles_all=ptiles_all, stim_imgs_20=stim_imgs_ref, header=header, path_output=path_output)
+                    n_trials_ref_per_block=n_trials_fb_per_block, n_trials_nofb_per_block=n_trials_nofb_per_block, trials_ref=trials_ref,
+                    trials_nonref_new=trials_nonref_new, ptiles_all=ptiles_all, stim_imgs_20=stim_imgs_ref, header=header, path_output=path_output)
 
     # get all possible imgs for last (=highest) anchor
     # select after creating training trials, to avoid excluding all high imgs from training
