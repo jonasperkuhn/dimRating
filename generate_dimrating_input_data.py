@@ -154,7 +154,7 @@ def save_exp_trials(dim_scores, n_blocks_exp, n_trials_exp, n_trials_exp_fb,
         trial_mat_exp_block = np.zeros((n_trials_per_block, 4))
         # add n_trials_ref/n_blocks trials
         trials_ref_block = range(block * n_trials_ref_per_block, (block + 1) * n_trials_ref_per_block)
-        trial_mat_exp_block[0:n_trials_ref_per_block, 0] = [trials_ref[i] for i in trials_ref_block]
+        trial_mat_exp_block[0:n_trials_ref_per_block, 0] = [stim_imgs_ref[i] for i in trials_ref_block]
         # add true_dim_score for feedback img
         trial_mat_exp_block[0:n_trials_ref_per_block, 1] = [dim_scores[int(stim_imgs_ref[i])] for i in trials_ref_block]
         # set feedback to 1 for part of exp imgs
@@ -216,14 +216,15 @@ for dim_id in range(np.size(spose, 1)):
         ptiles_nonzero=ptiles_nonzero, img_ind_nonzero=img_ind_nonzero, img_ind_zero=img_ind_zero,
            n_anchors_pos=n_anchors_pos, stim_imgs_ref=stim_imgs_ref, concept_codes_48_nonref=concept_codes_48_nonref,
               path_exp_screenshot=path_exp_screenshot)
+        # anchor deviations of last (=highest) anchor are saved to variable for selecting anchor_imgs_highest below
     # generate and save training trial csv's
     stim_imgs_train = save_train_trials(object_indices=object_indices, anchor_images_examples=anchor_images_examples,
-                                        stim_imgs_20=stim_imgs_ref, n_trials_train=n_trials_train, n_trials_train_nofb=n_trials_train_nofb,
-                                        n_anchors_pos=n_anchors_pos, n_blocks_train=n_blocks_train, header=header, path_output=path_output)
+        stim_imgs_ref=stim_imgs_ref, n_trials_train=n_trials_train, n_trials_train_nofb=n_trials_train_nofb,
+            n_anchors_pos=n_anchors_pos, n_blocks_train=n_blocks_train, header=header, path_output=path_output)
     # generate exp trial csv
-    save_exp_trials(dim_scores=dim_scores, n_blocks_exp=n_blocks_exp, n_trials_per_block=n_trials_per_block,
-                    n_trials_ref_per_block=n_trials_fb_per_block, n_trials_nofb_per_block=n_trials_nofb_per_block, trials_ref=trials_ref,
-                    trials_nonref_new=trials_nonref_new, ptiles_all=ptiles_all, stim_imgs_20=stim_imgs_ref, header=header, path_output=path_output)
+    save_exp_trials(dim_scores=dim_scores, n_blocks_exp=n_blocks_exp, n_trials_exp=n_trials_exp,
+        n_trials_exp_fb=n_trials_exp_fb, trials_ref=trials_ref,
+            trials_nonref_new=trials_nonref_new, ptiles_all=ptiles_all, stim_imgs_ref=stim_imgs_ref, header=header, path_output=path_output)
 
     # get all possible imgs for last (=highest) anchor
     # select after creating training trials, to avoid excluding all high imgs from training
@@ -238,8 +239,8 @@ for dim_id in range(np.size(spose, 1)):
 
     # select stimulus images and copy them to exp folder
     # combine training and test images
-    trial_img_list = stim_imgs_train + stim_imgs_ref + stim_imgs_48_nonref + stim_imgs_48_new
+    all_stimuli = stim_imgs_train + stim_imgs_ref + stim_imgs_48_nonref + stim_imgs_48_new
     # copy selected trial images to exp resources folder
-    for img_code in trial_img_list:
+    for img_code in all_stimuli:
         copyfile(path_input + 'test images/' + str(img_code) + '.jpg', path_output + 'test images/' + str(img_code) + '.jpg')
     print(dim_id)
