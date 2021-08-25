@@ -55,9 +55,9 @@ def get_ptiles(dim_scores, zero_cutoff, n_anchors_pos, dim_id, path_ptiles):
 def exclude_test_imgs(img_ind_zero, ptiles_nonzero, img_ind_nonzero, stim_imgs_ref, concept_codes_48_nonref):
     # remove previously rated ref images and corresponding nonref concept images from anchor img code pop
     # (because they will be tested)
-    img_ind_zero = [i for i in img_ind_zero if i not in stim_imgs_ref and i not in concept_codes_48_nonref]
+    img_ind_zero = [i for i in img_ind_zero if (i not in stim_imgs_ref and i not in concept_codes_48_nonref)]
     # get logical vector that's positive when images are part of the test image set (see above)
-    ind_imgs_to_keep_nonzero = np.ma.masked_array([i not in stim_imgs_ref and i not in concept_codes_48_nonref for i in img_ind_nonzero])
+    ind_imgs_to_keep_nonzero = np.ma.masked_array([(i not in stim_imgs_ref and i not in concept_codes_48_nonref) for i in img_ind_nonzero])
     # filter percentiles based on logical vector
     ptiles_nonzero_np = np.array(ptiles_nonzero)  # convert to np array for indexing
     ptiles_nonzero_excluded = ptiles_nonzero_np[ind_imgs_to_keep_nonzero]
@@ -90,11 +90,11 @@ def get_anchor_imgs(n_anchor_imgs, ptiles_nonzero, img_ind_nonzero, img_ind_zero
         # select n_anchor_imgs of lowest deviating percentiles
         # for very high and very low anchor, choose max. n_anchor_imgs_very imgs, to avoid img overlap to other anchors
         if i_anchor in [0, n_anchors_pos - 1]:
-            img_codes_closest = [img_ind_nonzero[img]
+            anchor_img_codes[i_anchor+1] = [img_ind_nonzero[img]
                                  for img in np.argsort(anchor_dev)][0:min(n_anchor_imgs, n_anchor_imgs_very)]
         # for other anchors, take all n_anchor_imgs imgs (no threat of overlap)
         else:
-            img_codes_closest = [img_ind_nonzero[img] for img in np.argsort(anchor_dev)][0: n_anchor_imgs]
+            anchor_img_codes[i_anchor+1] = [img_ind_nonzero[img] for img in np.argsort(anchor_dev)][0: n_anchor_imgs]
         anchor_images_examples.append(anchor_img_codes[i_anchor + 1][-1])  # append last (furthest away) anchor image
     # save codes of each anchor as pickle
     with open(path_exp_screenshot + 'anchor_img_codes/anchor_img_codes_' + str(dim_id) + '.pkl', 'wb') as f:
@@ -113,14 +113,14 @@ def create_trial_mat(fb: int, n_trials_train_mat, train_img_codes, ptiles_all, d
 def save_train_trials(object_indices, anchor_images_examples, stim_imgs_ref, n_trials_train, n_trials_train_nofb,
                       n_anchors_pos, n_blocks_train, header, path_output):
     # select training images set to sample from, without anchor images and 20 test images
-    train_img_pop = [x for x in object_indices if (x not in anchor_images_examples) and (x not in stim_imgs_ref)
-                     and (x not in concept_codes_48_nonref)]
-    # randomly select n_training_imgs-n_anchors images
+    train_img_pop = [x for x in object_indices if (x not in anchor_images_examples and x not in stim_imgs_ref
+                     and x not in concept_codes_48_nonref)]
+    # randomly select n_training_imgs-n_anchors images (anchor img examples will be appended below)
     train_img_codes_sample = random.sample(train_img_pop, n_trials_train - n_anchors_pos)
     # create no-feedback training trials and save as csv
     train_img_codes_nofb = random.sample(train_img_codes_sample, n_trials_train_nofb)
-    trial_mat_nofb = create_trial_mat(fb = 0, n_trials_train_mat = n_trials_train_nofb,
-        train_img_codes = train_img_codes_nofb, ptiles_all = ptiles_all, dim_scores = dim_scores)
+    trial_mat_nofb = create_trial_mat(fb=0, n_trials_train_mat=n_trials_train_nofb,
+        train_img_codes=train_img_codes_nofb, ptiles_all=ptiles_all, dim_scores=dim_scores)
     fname = path_output + 'condition files/traintrials_nofb.csv'  # set file name
     np.savetxt(fname, trial_mat_nofb, delimiter=",", header=header, comments='')   # save as .csv
     # add anchor training images to list, and shuffle
@@ -128,9 +128,9 @@ def save_train_trials(object_indices, anchor_images_examples, stim_imgs_ref, n_t
     train_img_codes_fb = train_img_codes_sample2 + anchor_images_examples
     random.shuffle(train_img_codes_fb)
     # create trial matrix and fill with img_codes, corresponding dim_scores, and feedback=1
-    trial_mat_fb = create_trial_mat(fb = 1, n_trials_train_mat = n_trials_train - n_trials_train_nofb,
-        train_img_codes = train_img_codes_fb, ptiles_all = ptiles_all, dim_scores = dim_scores)
-        # split feedback training trials in blocks and save trial files
+    trial_mat_fb = create_trial_mat(fb=1, n_trials_train_mat=n_trials_train - n_trials_train_nofb,
+        train_img_codes=train_img_codes_fb, ptiles_all=ptiles_all, dim_scores=dim_scores)
+    # split feedback training trials in blocks and save trial files
     trial_mat_list = np.split(trial_mat_fb, n_blocks_train)
     for block, trial_mat_split in enumerate(trial_mat_list):
         fname = path_output + 'condition files/traintrials_fb_block' + str(block) + '.csv'  # set file name
@@ -187,7 +187,7 @@ n_trials_exp = 296  # number of total test trials
 n_trials_exp_fb = 59  # number of test trials during which feedback will be given
 n_anchors = 7  # number of dim scale anchors
 n_anchors_pos = n_anchors - 1
-n_anchor_imgs = 12  # max number of imgs per anchor
+n_anchor_imgs = 13  # max number of imgs per anchor + 1 because last image is selected as training image
 n_anchor_imgs_insp_highest = 36  # max number of imgs displayed in the inspect_highest_anchor_imgs routine
 zero_cutoff = 0.3  # scale cutoff, to calculate percentiles separately below and above cutoff for a percentile scale that also differentiates the high values (else biased by many low values)
 n_blocks_train = 3  # number of training blocks
@@ -213,9 +213,9 @@ for dim_id in range(np.size(spose, 1)):
         zero_cutoff=zero_cutoff, n_anchors_pos=n_anchors_pos, dim_id=dim_id, path_ptiles=path_ptiles)
     # generate and save anchor img links
     anchor_images_examples, n_anchor_imgs_very, anchor_dev_highest = get_anchor_imgs(n_anchor_imgs=n_anchor_imgs,
-                                                                                     ptiles_nonzero=ptiles_nonzero, img_ind_nonzero=img_ind_nonzero, img_ind_zero=img_ind_zero,
-                                                                                     n_anchors_pos=n_anchors_pos, stim_imgs_ref=stim_imgs_ref, concept_codes_48_nonref=concept_codes_48_nonref,
-                                                                                     path_exp_screenshot=path_exp_screenshot)
+        ptiles_nonzero=ptiles_nonzero, img_ind_nonzero=img_ind_nonzero, img_ind_zero=img_ind_zero,
+           n_anchors_pos=n_anchors_pos, stim_imgs_ref=stim_imgs_ref, concept_codes_48_nonref=concept_codes_48_nonref,
+              path_exp_screenshot=path_exp_screenshot)
     # generate and save training trial csv's
     stim_imgs_train = save_train_trials(object_indices=object_indices, anchor_images_examples=anchor_images_examples,
                                         stim_imgs_20=stim_imgs_ref, n_trials_train=n_trials_train, n_trials_train_nofb=n_trials_train_nofb,
