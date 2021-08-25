@@ -95,11 +95,14 @@ def get_anchor_imgs(n_anchor_imgs, ptiles_nonzero, img_ind_nonzero, img_ind_zero
         # for other anchors, take all n_anchor_imgs imgs (no threat of overlap)
         else:
             anchor_img_codes[i_anchor+1] = [img_ind_nonzero[img] for img in np.argsort(anchor_dev)][0: n_anchor_imgs]
-        anchor_images_examples.append(anchor_img_codes[i_anchor + 1][-1])  # append last (furthest away) anchor image
+        # append last (furthest away) anchor image to training img list and remove from anchor img dict
+        anchor_images_examples.append(anchor_img_codes[i_anchor + 1].pop())
     # save codes of each anchor as pickle
     with open(path_exp_screenshot + 'anchor_img_codes/anchor_img_codes_' + str(dim_id) + '.pkl', 'wb') as f:
         pickle.dump(anchor_img_codes, f)
-    return anchor_images_examples, n_anchor_imgs_very, anchor_dev
+    # save anchor deviation of last (=highest) anchor in variable to return
+    anchor_dev_highest = [np.abs(ptile - 100) for ptile in ptiles_nonzero]
+    return anchor_images_examples, n_anchor_imgs_very, anchor_dev_highest, img_ind_zero, ptiles_nonzero, img_ind_nonzero
 
 def create_trial_mat(fb: int, n_trials_train_mat, train_img_codes, ptiles_all, dim_scores):
     trial_mat = np.zeros((n_trials_train_mat, 4))
@@ -212,10 +215,10 @@ for dim_id in range(np.size(spose, 1)):
     ptiles_all, ptiles_nonzero, img_ind_nonzero, img_ind_zero = get_ptiles(dim_scores=dim_scores,
         zero_cutoff=zero_cutoff, n_anchors_pos=n_anchors_pos, dim_id=dim_id, path_ptiles=path_ptiles)
     # generate and save anchor img links
-    anchor_images_examples, n_anchor_imgs_very, anchor_dev_highest = get_anchor_imgs(n_anchor_imgs=n_anchor_imgs,
-        ptiles_nonzero=ptiles_nonzero, img_ind_nonzero=img_ind_nonzero, img_ind_zero=img_ind_zero,
-           n_anchors_pos=n_anchors_pos, stim_imgs_ref=stim_imgs_ref, concept_codes_48_nonref=concept_codes_48_nonref,
-              path_exp_screenshot=path_exp_screenshot)
+    anchor_images_examples, n_anchor_imgs_very, anchor_dev_highest, img_ind_zero, ptiles_nonzero, img_ind_nonzero = \
+        get_anchor_imgs(n_anchor_imgs=n_anchor_imgs, ptiles_nonzero=ptiles_nonzero, img_ind_nonzero=img_ind_nonzero,
+            img_ind_zero=img_ind_zero, n_anchors_pos=n_anchors_pos, stim_imgs_ref=stim_imgs_ref,
+                concept_codes_48_nonref=concept_codes_48_nonref, path_exp_screenshot=path_exp_screenshot)
         # anchor deviations of last (=highest) anchor are saved to variable for selecting anchor_imgs_highest below
     # generate and save training trial csv's
     stim_imgs_train = save_train_trials(object_indices=object_indices, anchor_images_examples=anchor_images_examples,
@@ -229,9 +232,9 @@ for dim_id in range(np.size(spose, 1)):
     # get all possible imgs for last (=highest) anchor
     # select after creating training trials, to avoid excluding all high imgs from training
     img_codes_inspect_highest = [img_ind_nonzero[img_code] for img_code in np.argsort(anchor_dev_highest)
-                                 if img_code not in stim_imgs_ref
-                                 and img_code not in concept_codes_48_nonref
-                                 and img_code not in stim_imgs_train
+                                 if img_ind_nonzero[img_code] not in stim_imgs_ref
+                                 and img_ind_nonzero[img_code] not in concept_codes_48_nonref
+                                 and img_ind_nonzero[img_code] not in stim_imgs_train
                                  ][0: min(n_anchor_imgs_insp_highest, n_anchor_imgs_very)]
     # save as pickle
     with open(path_exp_screenshot + 'anchor_img_codes/img_codes_insp_highest_' + str(dim_id) + '.pkl', 'wb') as f:
