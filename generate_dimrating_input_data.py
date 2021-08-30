@@ -19,7 +19,7 @@ def get_dim_paths(dim_id, path_exps_final):
     # copy template experiment folder n_dims times, to create separate experiments for each spose dimension
         # first create template experiment folder manually, with resources subfolders for condition files, screenshots,
         # and test images, as well as the mouse-cursor-img.png
-    dim_exp_folder_path = path_exps_final + 'dimrating_dim' + str(dim_id) + '/'
+    dim_exp_folder_path = path_exps_final + 'dimrating_v2_dim' + f'{dim_id:02d}' + '/'
     copytree(path_exps_final + 'dimrating_template_folder', dim_exp_folder_path)
     # define output path as resources folder of newly created experiment folder
     path_output = dim_exp_folder_path + 'resources/'
